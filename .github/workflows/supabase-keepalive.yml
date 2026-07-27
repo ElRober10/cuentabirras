@@ -12,8 +12,22 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     steps:
+      - name: Comprobar que los secretos están configurados
+        run: |
+          if [ -z "$SUPABASE_URL" ]; then
+            echo "::error::Falta el secreto SUPABASE_URL (o está vacío). Revísalo en Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          if [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::Falta el secreto SUPABASE_ANON_KEY (o está vacío). Revísalo en Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+          echo "Secretos presentes (longitud de SUPABASE_URL: ${#SUPABASE_URL} caracteres)."
+
       - name: Ping del endpoint de salud de Supabase Auth
         run: |
-          curl -sf "${{ secrets.SUPABASE_URL }}/auth/v1/health" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}"
+          curl -sf "${SUPABASE_URL}/auth/v1/health" -H "apikey: ${SUPABASE_ANON_KEY}"
