@@ -1,0 +1,19 @@
+name: Supabase keep-alive
+
+# El plan Free de Supabase pausa el proyecto tras 7 días sin actividad.
+# Este workflow hace una petición ligera cada 5 días para que nunca llegue
+# a pausarse, sin coste y sin tener que "despertarlo" a mano desde el dashboard.
+
+on:
+  schedule:
+    - cron: '0 6 */5 * *' # cada 5 días a las 06:00 UTC
+  workflow_dispatch: {} # permite lanzarlo a mano desde la pestaña Actions
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping del endpoint de salud de Supabase Auth
+        run: |
+          curl -sf "${{ secrets.SUPABASE_URL }}/auth/v1/health" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}"

@@ -1,0 +1,216 @@
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Link, router } from 'expo-router';
+import { useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { StyleSheet } from 'react-native';
+import { HelperText, Text, TextInput } from 'react-native-paper';
+
+import { registerSchema } from '../../src/application/auth/registerSchema';
+import { AppButton } from '../../src/presentation/components/AppButton';
+import { KeyboardAwareScreen } from '../../src/presentation/components/KeyboardAwareScreen';
+import { useAuth } from '../../src/presentation/hooks/useAuth';
+
+export default function RegisterScreen() {
+  const { register } = useAuth();
+  const [serverError, setServerError] = useState(null);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm({
+    resolver: zodResolver(registerSchema),
+    defaultValues: { firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' },
+  });
+
+  const onSubmit = async ({ confirmPassword: _confirmPassword, ...values }) => {
+    setServerError(null);
+    try {
+      const result = await register({ ...values, phone: values.phone || null });
+      if (result.needsEmailConfirmation) {
+        setNeedsConfirmation(true);
+      } else {
+        router.replace('/(app)');
+      }
+    } catch (error) {
+      setServerError(error.message);
+    }
+  };
+
+  if (needsConfirmation) {
+    return (
+      <KeyboardAwareScreen>
+        <Text variant="titleMedium">Revisa tu email</Text>
+        <Text style={styles.subtitle}>
+          Te hemos enviado un enlace de confirmación. Confírmalo y después inicia sesión.
+        </Text>
+        <Link href="/(auth)/login" asChild>
+          <AppButton mode="contained" style={styles.button}>
+            Ir a iniciar sesión
+          </AppButton>
+        </Link>
+      </KeyboardAwareScreen>
+    );
+  }
+
+  return (
+    <KeyboardAwareScreen>
+      <Text variant="headlineSmall">Crear cuenta</Text>
+
+      <Controller
+        control={control}
+        name="firstName"
+        render={({ field }) => (
+          <TextInput
+            label="Nombre"
+            value={field.value}
+            onChangeText={field.onChange}
+            error={!!errors.firstName}
+            style={styles.input}
+          />
+        )}
+      />
+      <HelperText type="error" visible={!!errors.firstName}>
+        {errors.firstName?.message}
+      </HelperText>
+
+      <Controller
+        control={control}
+        name="lastName"
+        render={({ field }) => (
+          <TextInput
+            label="Apellidos"
+            value={field.value}
+            onChangeText={field.onChange}
+            error={!!errors.lastName}
+            style={styles.input}
+          />
+        )}
+      />
+      <HelperText type="error" visible={!!errors.lastName}>
+        {errors.lastName?.message}
+      </HelperText>
+
+      <Controller
+        control={control}
+        name="email"
+        render={({ field }) => (
+          <TextInput
+            label="Email"
+            value={field.value}
+            onChangeText={field.onChange}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="email"
+            textContentType="emailAddress"
+            error={!!errors.email}
+            style={styles.input}
+          />
+        )}
+      />
+      <HelperText type="error" visible={!!errors.email}>
+        {errors.email?.message}
+      </HelperText>
+
+      <Controller
+        control={control}
+        name="phone"
+        render={({ field }) => (
+          <TextInput
+            label="Teléfono (opcional)"
+            value={field.value}
+            onChangeText={field.onChange}
+            keyboardType="phone-pad"
+            style={styles.input}
+          />
+        )}
+      />
+
+      <Controller
+        control={control}
+        name="password"
+        render={({ field }) => (
+          <TextInput
+            label="Contraseña"
+            value={field.value}
+            onChangeText={field.onChange}
+            secureTextEntry={!showPassword}
+            autoComplete="new-password"
+            textContentType="newPassword"
+            right={
+              <TextInput.Icon
+                icon={showPassword ? 'eye-off' : 'eye'}
+                onPress={() => setShowPassword((v) => !v)}
+              />
+            }
+            error={!!errors.password}
+            style={styles.input}
+          />
+        )}
+      />
+      <HelperText type="error" visible={!!errors.password}>
+        {errors.password?.message}
+      </HelperText>
+
+      <Controller
+        control={control}
+        name="confirmPassword"
+        render={({ field }) => (
+          <TextInput
+            label="Confirmar contraseña"
+            value={field.value}
+            onChangeText={field.onChange}
+            secureTextEntry={!showConfirmPassword}
+            autoComplete="new-password"
+            textContentType="newPassword"
+            right={
+              <TextInput.Icon
+                icon={showConfirmPassword ? 'eye-off' : 'eye'}
+                onPress={() => setShowConfirmPassword((v) => !v)}
+              />
+            }
+            error={!!errors.confirmPassword}
+            style={styles.input}
+          />
+        )}
+      />
+      <HelperText type="error" visible={!!errors.confirmPassword}>
+        {errors.confirmPassword?.message}
+      </HelperText>
+
+      {serverError ? (
+        <HelperText type="error" visible>
+          {serverError}
+        </HelperText>
+      ) : null}
+
+      <AppButton mode="contained" onPress={handleSubmit(onSubmit)} loading={isSubmitting} style={styles.button}>
+        Registrarme
+      </AppButton>
+
+      <Link href="/(auth)/login" asChild>
+        <AppButton mode="text" style={styles.link}>
+          ¿Ya tienes cuenta? Inicia sesión
+        </AppButton>
+      </Link>
+    </KeyboardAwareScreen>
+  );
+}
+
+const styles = StyleSheet.create({
+  input: {
+    marginTop: 8,
+  },
+  button: {
+    marginTop: 16,
+  },
+  subtitle: {
+    marginVertical: 12,
+  },
+  link: {
+    marginTop: 16,
+    alignSelf: 'center',
+  },
+});
