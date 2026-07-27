@@ -7,17 +7,25 @@ import { biometricAuth } from '../../src/infrastructure/auth/biometricAuth';
 import { AppButton } from '../../src/presentation/components/AppButton';
 import { useAuth } from '../../src/presentation/hooks/useAuth';
 
+// Pantalla de la ruta "/(app)" — la primera que ves una vez logueado y
+// desbloqueado. De momento es solo un saludo + el interruptor de biometría
+// + cerrar sesión; en la Fase 1 aquí irá la lista de bares.
 export default function HomeScreen() {
   const { user, logout } = useAuth();
   const theme = useTheme();
   const [biometricSupported, setBiometricSupported] = useState(false);
   const [biometricEnabled, setBiometricEnabled] = useState(false);
 
+  // Al entrar en esta pantalla, comprobamos si el móvil soporta biometría y
+  // si el usuario ya la tenía activada, para pintar el interruptor en su
+  // estado correcto desde el principio (en vez de arrancar siempre en "no").
   useEffect(() => {
     biometricAuth.isSupported().then(setBiometricSupported);
     biometricAuth.isEnabled().then(setBiometricEnabled);
   }, []);
 
+  // Se llama cuando el usuario toca el interruptor. Guarda la preferencia
+  // en SecureStore (biometricAuth.setEnabled) y actualiza lo que se ve.
   const toggleBiometric = useCallback(async (value) => {
     try {
       await biometricAuth.setEnabled(value);
@@ -28,7 +36,7 @@ export default function HomeScreen() {
   }, []);
 
   const handleLogout = async () => {
-    await logout();
+    await logout(); // cierra sesión en Supabase de verdad (invalida el token)
     router.replace('/(auth)/login');
   };
 
@@ -39,6 +47,11 @@ export default function HomeScreen() {
         Hola, {user?.firstName}
       </Text>
 
+      {/* Este View SIEMPRE ocupa el mismo espacio en pantalla (con
+          opacity: 0 si no hay biometría soportada), en vez de desaparecer
+          del todo. Truco para evitar que el resto de elementos "salten" de
+          sitio cuando isSupported tarda un instante en resolverse — nos
+          pasó de verdad y se veía raro. */}
       <View style={[styles.switchRow, !biometricSupported && styles.switchRowHidden]}>
         <Text>Desbloqueo con huella / Face ID</Text>
         <Switch value={biometricEnabled} onValueChange={toggleBiometric} disabled={!biometricSupported} />

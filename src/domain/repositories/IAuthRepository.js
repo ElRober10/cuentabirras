@@ -1,15 +1,25 @@
+// Un "repositorio" es, en esta arquitectura, cualquier pieza que sabe hablar
+// con una fuente de datos externa (aquí: el sistema de login). Este archivo
+// NO tiene código que se ejecute — es solo un "contrato" (documentado con
+// JSDoc) que dice qué funciones debe tener CUALQUIER implementación de auth,
+// sin importar si por debajo usa Supabase, Firebase, o un mock falso en tests.
+//
+// ¿Para qué sirve esto si no se ejecuta? Para que `src/application/` y
+// `src/presentation/` (pantallas, hooks) nunca escriban `import supabase`
+// directamente. Si mañana cambiamos de proveedor, solo tocamos
+// `src/infrastructure/` y `src/di/container.js` — el resto de la app no se
+// entera. Esto es el principio SOLID de "inversión de dependencias".
+//
+// La implementación real que SÍ cumple este contrato está en:
+// src/infrastructure/supabase/repositories/SupabaseAuthRepository.js
 /**
- * Contrato que debe cumplir cualquier implementación de autenticación
- * (Supabase, o un mock en tests). Nada en `application/` debe importar
- * directamente de `infrastructure/` — solo depende de esta forma.
- *
  * @typedef {Object} IAuthRepository
- * @property {(params: {email: string, password: string, firstName: string, lastName: string}) => Promise<UserProfile>} signUpWithPassword
+ * @property {(params: {email: string, password: string, firstName: string, lastName: string, phone?: string}) => Promise<{needsEmailConfirmation: boolean, user: UserProfile|null}>} signUpWithPassword
  * @property {(params: {email: string, password: string}) => Promise<UserProfile>} signInWithPassword
- * @property {() => Promise<UserProfile>} signInWithGoogle
+ * @property {() => Promise<UserProfile>} signInWithGoogle - de momento lanza un error, se implementa en la Fase 2
  * @property {() => Promise<void>} signOut
  * @property {() => Promise<UserProfile|null>} getCurrentUser
- * @property {(callback: (user: UserProfile|null) => void) => () => void} onAuthStateChange - devuelve función para desuscribirse
+ * @property {(callback: (user: UserProfile|null) => void) => () => void} onAuthStateChange - se llama cada vez que cambia la sesión (login/logout/renovación de token). Devuelve una función para "desuscribirse" cuando el componente que lo usa se desmonta.
  */
 
 export {};

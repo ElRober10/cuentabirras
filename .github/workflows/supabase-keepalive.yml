@@ -1,3 +1,6 @@
+# Un "GitHub Action" (o workflow) es un robot que vive en GitHub y ejecuta
+# comandos automáticamente, sin que tu ordenador tenga que estar encendido.
+# Este archivo describe UN workflow: qué lo dispara (`on:`) y qué hace (`jobs:`).
 name: Supabase keep-alive
 
 # El plan Free de Supabase pausa el proyecto tras 7 días sin actividad.
@@ -6,16 +9,29 @@ name: Supabase keep-alive
 
 on:
   schedule:
-    - cron: '0 6 */5 * *' # cada 5 días a las 06:00 UTC
-  workflow_dispatch: {} # permite lanzarlo a mano desde la pestaña Actions
+    # Sintaxis "cron": minuto hora día-del-mes mes día-de-la-semana.
+    # '0 6 */5 * *' = a las 06:00 UTC, cada 5 días.
+    - cron: '0 6 */5 * *'
+  # Esto añade el botón "Run workflow" en la pestaña Actions de GitHub, para
+  # poder lanzarlo a mano y comprobar que funciona sin esperar 5 días.
+  workflow_dispatch: {}
 
 jobs:
+  # "ping" es el nombre que le hemos puesto a este job (puede haber varios,
+  # aquí solo hay uno). Se ejecuta en una máquina Linux temporal de GitHub.
   ping:
     runs-on: ubuntu-latest
+    # Los "secrets" son valores guardados en GitHub (Settings → Secrets and
+    # variables → Actions) que NUNCA se ven en el código ni en los logs — se
+    # sustituyen por "***" si algo intenta imprimirlos. Aquí los copiamos a
+    # variables de entorno normales para poder usarlos en los pasos de abajo.
     env:
       SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
       SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
     steps:
+      # Este primer paso existe por la vez que fallo con "exit code 3" y no
+      # sabíamos por qué: si el secreto no está bien puesto (nombre mal
+      # escrito o vacío), esto lo dice claramente en vez de un error críptico.
       - name: Comprobar que los secretos están configurados
         run: |
           if [ -z "$SUPABASE_URL" ]; then
@@ -28,6 +44,10 @@ jobs:
           fi
           echo "Secretos presentes (longitud de SUPABASE_URL: ${#SUPABASE_URL} caracteres)."
 
+      # El paso de verdad: una petición HTTP sencilla al endpoint de salud de
+      # Supabase Auth. No hace falta que devuelva datos ni que tengamos
+      # permiso sobre ninguna tabla — con que la petición LLEGUE al proyecto
+      # ya cuenta como "actividad" y resetea el contador de los 7 días.
       - name: Ping del endpoint de salud de Supabase Auth
         run: |
           curl -sf "${SUPABASE_URL}/auth/v1/health" -H "apikey: ${SUPABASE_ANON_KEY}"

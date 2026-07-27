@@ -10,9 +10,16 @@ import { AppButton } from '../../src/presentation/components/AppButton';
 import { KeyboardAwareScreen } from '../../src/presentation/components/KeyboardAwareScreen';
 import { useAuth } from '../../src/presentation/hooks/useAuth';
 
+// Pantalla de la ruta "/(auth)/register". Mismo patrón que login.jsx
+// (Controller + react-hook-form + zod) — mira los comentarios de ese
+// archivo si algo no queda claro aquí. Este archivo tiene 2 cosas de más:
+// el campo "confirmar contraseña" y la pantalla de "revisa tu email".
 export default function RegisterScreen() {
   const { register } = useAuth();
   const [serverError, setServerError] = useState(null);
+  // needsConfirmation: cuando Supabase exige confirmar el email antes de
+  // dejarte entrar, mostramos otro contenido en vez del formulario (ver más
+  // abajo el "if (needsConfirmation) { ... }").
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -25,6 +32,11 @@ export default function RegisterScreen() {
     defaultValues: { firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' },
   });
 
+  // `{ confirmPassword: _confirmPassword, ...values }`: sacamos
+  // confirmPassword fuera de los datos que le pasamos a `register(...)` —
+  // solo servía para validar en el formulario, Supabase no necesita
+  // recibirla (nombrarla `_confirmPassword` es solo una convención para
+  // decir "sí, la extraigo a propósito, aunque no la use").
   const onSubmit = async ({ confirmPassword: _confirmPassword, ...values }) => {
     setServerError(null);
     try {
@@ -39,6 +51,9 @@ export default function RegisterScreen() {
     }
   };
 
+  // "Return anticipado": si ya nos registramos y toca confirmar el email,
+  // esta función corta aquí y muestra solo este mensaje, sin llegar a
+  // dibujar el formulario de más abajo.
   if (needsConfirmation) {
     return (
       <KeyboardAwareScreen>
@@ -114,6 +129,8 @@ export default function RegisterScreen() {
         {errors.email?.message}
       </HelperText>
 
+      {/* Sin `error`/HelperText porque es opcional: da igual si se queda
+          vacío, zod no lo rechaza (ver registerSchema.js: phone es .optional()). */}
       <Controller
         control={control}
         name="phone"
@@ -137,6 +154,9 @@ export default function RegisterScreen() {
             value={field.value}
             onChangeText={field.onChange}
             secureTextEntry={!showPassword}
+            // "new-password"/"newPassword" (en vez de "current-password" como
+            // en login.jsx) le dice al gestor de contraseñas que esto es una
+            // contraseña NUEVA que crear/guardar, no una que autorellenar.
             autoComplete="new-password"
             textContentType="newPassword"
             right={
@@ -171,6 +191,8 @@ export default function RegisterScreen() {
                 onPress={() => setShowConfirmPassword((v) => !v)}
               />
             }
+            // Este error puede venir de dos sitios: el campo vacío (.min(1)) o
+            // el .refine() de registerSchema.js que compara con "password".
             error={!!errors.confirmPassword}
             style={styles.input}
           />

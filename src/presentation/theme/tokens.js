@@ -1,32 +1,47 @@
 import { MD3DarkTheme, MD3LightTheme } from 'react-native-paper';
 
-// Paleta "cerveza": ámbar/dorado cálido como color de marca.
+// React Native Paper sigue el sistema de diseño "Material Design 3" (MD3) de
+// Google: define un theme con MUCHOS colores con nombres fijos (primary,
+// onPrimary, background, surface...) y todos sus componentes (Button,
+// TextInput, Switch...) los usan automáticamente. No tocamos el theme
+// entero desde cero: partimos del tema por defecto de Paper
+// (MD3LightTheme/MD3DarkTheme) y solo sobreescribimos los colores que nos
+// interesan para darle nuestra identidad ("cerveza").
+//
+// Truco de los nombres "onX": `onPrimary` es el color que debe tener el
+// TEXTO que va ENCIMA de un fondo `primary`, para que se lea bien. Por eso
+// onPrimary es blanco en el tema claro (letra blanca sobre botón ámbar) y
+// marrón oscuro en el tema oscuro (letra oscura sobre botón ámbar claro).
 const amber = {
-  amber10: '#FFF8E9',
-  amber30: '#FFE0A3',
-  amber50: '#F2A900',
-  amber60: '#D98E00',
-  amber80: '#7A4B00',
-  amber90: '#4A2E00',
-  foam: '#FFF6E5',
-  stout: '#231609',
+  amber10: '#FFF8E9', // ámbar casi blanco
+  amber30: '#FFE0A3', // ámbar claro (dorado)
+  amber50: '#F2A900', // ámbar medio
+  amber60: '#D98E00', // ámbar algo más oscuro (color principal en modo claro)
+  amber80: '#7A4B00', // marrón cerveza
+  amber90: '#4A2E00', // marrón muy oscuro
+  foam: '#FFF6E5', // "espuma de cerveza": fondo del tema claro
+  stout: '#231609', // "cerveza negra": fondo del tema oscuro
 };
 
+// Tema para cuando el móvil está en modo claro.
 export const lightTheme = {
-  ...MD3LightTheme,
+  ...MD3LightTheme, // partimos de todos los valores por defecto de Paper...
   colors: {
-    ...MD3LightTheme.colors,
-    primary: amber.amber60,
-    onPrimary: '#FFFFFF',
+    ...MD3LightTheme.colors, // ...y solo sobreescribimos estos:
+    primary: amber.amber60, // color principal (botones, switches activados...)
+    onPrimary: '#FFFFFF', // texto sobre el color principal
     primaryContainer: amber.amber30,
     onPrimaryContainer: amber.amber90,
     secondary: amber.amber80,
-    background: amber.foam,
-    surface: '#FFFFFF',
+    background: amber.foam, // fondo general de las pantallas
+    surface: '#FFFFFF', // fondo de "superficies" (tarjetas, inputs...)
     surfaceVariant: amber.amber10,
   },
 };
 
+// Tema para cuando el móvil está en modo oscuro. Mismo patrón, colores
+// distintos (más claros los "primary", porque sobre fondo oscuro necesitan
+// contraste al revés que en el tema claro).
 export const darkTheme = {
   ...MD3DarkTheme,
   colors: {
@@ -41,3 +56,6 @@ export const darkTheme = {
     surfaceVariant: amber.amber90,
   },
 };
+
+// ¿Quién decide cuál de los dos se usa? app/_layout.jsx, mirando el ajuste
+// de tema (claro/oscuro) del propio sistema operativo del móvil.
