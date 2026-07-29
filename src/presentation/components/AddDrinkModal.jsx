@@ -175,7 +175,10 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
             )}
 
             {existingItem?.priceCents != null ? (
-              <Text style={styles.priceText}>{centsToEuros(existingItem.priceCents)} €</Text>
+              <View style={styles.priceRow}>
+                <Text style={styles.priceText}>{centsToEuros(existingItem.priceCents)} €</Text>
+                <IconButton icon="pencil-outline" size={18} onPress={handleSetPriceOnly} />
+              </View>
             ) : (
               <View style={styles.noPriceRow}>
                 <Text style={styles.priceText}>Sin precio todavía</Text>
@@ -277,6 +280,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginTop: 12,
     marginBottom: 8,
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   noPriceRow: {
     alignItems: 'center',

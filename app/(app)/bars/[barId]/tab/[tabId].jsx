@@ -194,6 +194,15 @@ export default function TabScreen() {
     setPricePrompt(null);
   };
 
+  // Antes de abrir el selector, forzamos un refresco de la popularidad —
+  // así el orden de los iconos siempre refleja lo último que has pedido tú
+  // y el grupo, sin depender de que ninguna otra parte del código se haya
+  // acordado de invalidar la caché en el momento justo.
+  const handleOpenAddDrink = () => {
+    queryClient.invalidateQueries({ queryKey: ['iconPopularity'] });
+    setModalVisible(true);
+  };
+
   const handleCloseTab = async () => {
     try {
       await container.tabRepository.closeTab(tabId);
@@ -243,7 +252,7 @@ export default function TabScreen() {
         />
       )}
 
-      <FAB icon="plus" style={[styles.fab, { backgroundColor: theme.colors.primary }]} onPress={() => setModalVisible(true)} />
+      <FAB icon="plus" style={[styles.fab, { backgroundColor: theme.colors.primary }]} onPress={handleOpenAddDrink} />
 
       <AddDrinkModal
         key={modalVisible ? 'add-drink-open' : 'add-drink-closed'}

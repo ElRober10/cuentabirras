@@ -1,4 +1,4 @@
-// Los 12 iconos "de verdad" (ilustraciones, no iconos genéricos) que se
+// Los iconos "de verdad" (ilustraciones, no iconos genéricos) que se
 // pueden elegir al dar de alta una bebida. Viven en shared/ por el mismo
 // motivo que drinkCategories.js: los usan tanto el formulario (elegir
 // icono) como las tarjetas (pintarlo).
@@ -19,6 +19,7 @@
 // tamaño REAL de la bebida — así un botellín no ocupa lo mismo que una
 // jarra grande. Valores orientativos de partida, a corregir.
 export const DRINK_ICONS = [
+  // --- Cervezas ---
   {
     value: 'botellin',
     label: 'Botellín',
@@ -98,8 +99,10 @@ export const DRINK_ICONS = [
     alcohol: false,
     ml: 250,
     scale: 0.85,
-    image: require('../../../assets/drinks/sin-alcohol-00.jpg'),
+    image: require('../../../assets/drinks/sin-alcohol-00.png'),
   },
+
+  // --- Refrescos ---
   {
     value: 'coca-cola',
     label: 'Coca-Cola',
@@ -128,6 +131,15 @@ export const DRINK_ICONS = [
     image: require('../../../assets/drinks/coca-cola-light.png'),
   },
   {
+    value: 'coca-cola-zero-zero',
+    label: 'Coca-Cola Zero Zero',
+    category: 'bebida',
+    alcohol: false,
+    ml: 330,
+    scale: 0.85,
+    image: require('../../../assets/drinks/coca-cola-zero-zero.png'),
+  },
+  {
     value: 'fanta-naranja',
     label: 'Fanta Naranja',
     category: 'bebida',
@@ -135,6 +147,164 @@ export const DRINK_ICONS = [
     ml: 330,
     scale: 0.85,
     image: require('../../../assets/drinks/fanta-naranja.png'),
+  },
+  {
+    value: 'fanta-limon',
+    label: 'Fanta Limón',
+    category: 'bebida',
+    alcohol: false,
+    ml: 330,
+    scale: 0.85,
+    image: require('../../../assets/drinks/fanta-limon.png'),
+  },
+  {
+    value: 'sprite',
+    label: 'Sprite',
+    category: 'bebida',
+    alcohol: false,
+    ml: 330,
+    scale: 0.85,
+    image: require('../../../assets/drinks/sprite.png'),
+  },
+  {
+    value: 'tonica',
+    label: 'Tónica',
+    category: 'bebida',
+    alcohol: false,
+    ml: 250,
+    scale: 0.8,
+    image: require('../../../assets/drinks/tonica.png'),
+  },
+  {
+    value: 'nestea',
+    label: 'Nestea',
+    category: 'bebida',
+    alcohol: false,
+    ml: 330,
+    scale: 0.85,
+    image: require('../../../assets/drinks/nestea.png'),
+  },
+  {
+    value: 'nestea-maracuya',
+    label: 'Nestea Maracuyá',
+    category: 'bebida',
+    alcohol: false,
+    ml: 330,
+    scale: 0.85,
+    image: require('../../../assets/drinks/nestea-maracuya.png'),
+  },
+  {
+    value: 'aquarius-naranja',
+    label: 'Aquarius Naranja',
+    category: 'bebida',
+    alcohol: false,
+    ml: 500,
+    scale: 0.9,
+    image: require('../../../assets/drinks/aquarius-naranja.png'),
+  },
+  {
+    value: 'aquarius-limon',
+    label: 'Aquarius Limón',
+    category: 'bebida',
+    alcohol: false,
+    ml: 500,
+    scale: 0.9,
+    image: require('../../../assets/drinks/aquarius-limon.png'),
+  },
+  {
+    value: 'red-bull',
+    label: 'Red Bull',
+    category: 'bebida',
+    alcohol: false,
+    ml: 250,
+    scale: 0.75,
+    image: require('../../../assets/drinks/red-bull.png'),
+  },
+
+  // --- Café y chocolate ---
+  {
+    value: 'cafe',
+    label: 'Café',
+    category: 'bebida',
+    alcohol: false,
+    ml: 50,
+    scale: 0.6,
+    image: require('../../../assets/drinks/cafe.png'),
+  },
+  {
+    value: 'cola-cao',
+    label: 'ColaCao',
+    category: 'bebida',
+    alcohol: false,
+    ml: 200,
+    scale: 0.65,
+    image: require('../../../assets/drinks/cola-cao.png'),
+  },
+  {
+    value: 'nesquik',
+    label: 'Nesquik',
+    category: 'bebida',
+    alcohol: false,
+    ml: 200,
+    scale: 0.65,
+    image: require('../../../assets/drinks/nesquik.png'),
+  },
+
+  // --- Copas y chupitos --- (3 niveles de copa por PRECIO, no por sabor —
+  // para no tener que meter una marca de licor distinta por cada bar)
+  {
+    value: 'copa',
+    label: 'Copa',
+    category: 'bebida',
+    alcohol: true,
+    ml: 500,
+    scale: 1,
+    image: require('../../../assets/drinks/copa.png'),
+  },
+  {
+    value: 'copa-premium',
+    label: 'Copa Premium',
+    category: 'bebida',
+    alcohol: true,
+    ml: 500,
+    scale: 1,
+    image: require('../../../assets/drinks/copa-premiun-1.png'),
+  },
+  {
+    value: 'copa-premium-2',
+    label: 'Copa Super Premium',
+    category: 'bebida',
+    alcohol: true,
+    ml: 500,
+    scale: 1,
+    image: require('../../../assets/drinks/copa-premium-2.png'),
+  },
+  {
+    value: 'chupitos',
+    label: 'Chupito',
+    category: 'bebida',
+    alcohol: true,
+    ml: 40,
+    scale: 0.5,
+    image: require('../../../assets/drinks/chupitos.png'),
+  },
+  {
+    value: 'tequifresa',
+    label: 'Tequifresa',
+    category: 'bebida',
+    alcohol: true,
+    ml: 40,
+    scale: 0.5,
+    image: require('../../../assets/drinks/tequifresa.png'),
+  },
+  {
+    value: 'crema-orujo',
+    label: 'Crema de Orujo',
+    category: 'bebida',
+    alcohol: true,
+    ml: 40,
+    scale: 0.5,
+    image: require('../../../assets/drinks/crema-orujo.png'),
   },
 ];
 
