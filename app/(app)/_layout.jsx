@@ -149,8 +149,24 @@ export default function AppLayout() {
   }
 
   // 5) Todo en orden: mostramos el navegador con las pantallas reales de
-  // dentro de (app), como app/(app)/index.jsx.
-  return <Stack screenOptions={{ headerShown: false }} />;
+  // dentro de (app). Por defecto sin cabecera (como la pantalla de inicio,
+  // que ya tiene su propio diseño) — pero las pantallas de bares SÍ llevan
+  // cabecera nativa, porque eso nos da gratis el botón "atrás" y el gesto
+  // de deslizar para volver.
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        headerStyle: { backgroundColor: theme.colors.surface },
+        headerTintColor: theme.colors.onSurface,
+      }}
+    >
+      <Stack.Screen name="index" />
+      <Stack.Screen name="bars/new" options={{ headerShown: true, title: 'Nuevo bar' }} />
+      <Stack.Screen name="bars/[barId]/index" options={{ headerShown: false }} />
+      <Stack.Screen name="bars/[barId]/tab/[tabId]" options={{ headerShown: true, title: 'Cuenta' }} />
+    </Stack>
+  );
 }
 
 const styles = StyleSheet.create({

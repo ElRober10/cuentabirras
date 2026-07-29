@@ -1,4 +1,4 @@
-import { MD3DarkTheme, MD3LightTheme } from 'react-native-paper';
+import { configureFonts, MD3DarkTheme, MD3LightTheme } from 'react-native-paper';
 
 // React Native Paper sigue el sistema de diseño "Material Design 3" (MD3) de
 // Google: define un theme con MUCHOS colores con nombres fijos (primary,
@@ -23,9 +23,18 @@ const amber = {
   stout: '#231609', // "cerveza negra": fondo del tema oscuro
 };
 
+// configureFonts con un único objeto "config" (en vez de uno por variante)
+// coge TODO el catálogo tipográfico de Material Design 3 (headlineLarge,
+// titleMedium, bodySmall...) y le cambia la fuente a todos a la vez,
+// conservando el tamaño/grosor propio de cada uno — así "Metal Mania" se
+// aplica en toda la app (títulos, botones, campos...) sin tener que ir
+// variante por variante.
+const fonts = configureFonts({ config: { fontFamily: 'MetalMania_400Regular' } });
+
 // Tema para cuando el móvil está en modo claro.
 export const lightTheme = {
   ...MD3LightTheme, // partimos de todos los valores por defecto de Paper...
+  fonts,
   colors: {
     ...MD3LightTheme.colors, // ...y solo sobreescribimos estos:
     primary: amber.amber60, // color principal (botones, switches activados...)
@@ -44,6 +53,7 @@ export const lightTheme = {
 // contraste al revés que en el tema claro).
 export const darkTheme = {
   ...MD3DarkTheme,
+  fonts,
   colors: {
     ...MD3DarkTheme.colors,
     primary: amber.amber30,

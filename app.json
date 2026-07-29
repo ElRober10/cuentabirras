@@ -25,7 +25,20 @@
       "expo-router",
       "expo-secure-store",
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "CuentaBirras necesita acceso a tus fotos para ponerle una imagen a un bar.",
+          "cameraPermission": "CuentaBirras necesita acceso a la cámara para hacer una foto de un bar."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "CuentaBirras usa tu ubicación para ordenar los bares por cercanía y evitar crear bares duplicados."
+        }
+      ]
     ]
   }
 }
