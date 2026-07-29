@@ -1,11 +1,12 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet } from 'react-native';
-import { HelperText, Text, TextInput } from 'react-native-paper';
+import { StyleSheet, View } from 'react-native';
+import { HelperText, Switch, Text, TextInput } from 'react-native-paper';
 
 import { loginSchema } from '../../src/application/auth/loginSchema';
+import { biometricAuth } from '../../src/infrastructure/auth/biometricAuth';
 import { AppButton } from '../../src/presentation/components/AppButton';
 import { KeyboardAwareScreen } from '../../src/presentation/components/KeyboardAwareScreen';
 import { useAuth } from '../../src/presentation/hooks/useAuth';
@@ -20,6 +21,15 @@ export default function LoginScreen() {
   // gestiona react-hook-form en `errors`).
   const [serverError, setServerError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [biometricSupported, setBiometricSupported] = useState(false);
+  // Por defecto activado si el móvil lo soporta: como todo este interruptor
+  // existe para "entrar rápido la próxima vez", lo más cómodo es que venga
+  // ya marcado y el usuario lo desmarque si no lo quiere.
+  const [enableBiometric, setEnableBiometric] = useState(true);
+
+  useEffect(() => {
+    biometricAuth.isSupported().then(setBiometricSupported);
+  }, []);
 
   // useForm es el "cerebro" del formulario: `control` conecta cada campo,
   // `handleSubmit` valida antes de llamar a tu función, y `formState` te da
@@ -38,6 +48,12 @@ export default function LoginScreen() {
     setServerError(null);
     try {
       await login(values); // llama a useAuth() → SupabaseAuthRepository
+      // Guardamos la preferencia de biometría justo después de un login con
+      // éxito: es el momento en que tiene sentido preguntarlo, ya con una
+      // sesión real que desbloquear la próxima vez.
+      if (biometricSupported) {
+        await biometricAuth.setEnabled(enableBiometric);
+      }
       router.replace('/(app)'); // navega a la pantalla principal, sin dejar "volver" al login
     } catch (error) {
       setServerError(error.message);
@@ -46,7 +62,7 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAwareScreen>
-      <Text variant="headlineSmall">CuentaBirras 🍺</Text>
+      <Text style={styles.brandTitle}>CuentaBirras 🍺</Text>
 
       {/* <Controller> es el "puente" entre un campo de react-hook-form y un
           componente de UI (aquí, el TextInput de Paper). `field.value` y
@@ -107,6 +123,14 @@ export default function LoginScreen() {
         {errors.password?.message}
       </HelperText>
 
+      {/* Igual que en la pantalla de inicio: este View reserva su espacio
+          siempre, aunque esté vacío, para que nada "salte" mientras se
+          comprueba si el móvil soporta biometría. */}
+      <View style={[styles.switchRow, !biometricSupported && styles.switchRowHidden]}>
+        <Text>Entrar con huella la próxima vez</Text>
+        <Switch value={enableBiometric} onValueChange={setEnableBiometric} disabled={!biometricSupported} />
+      </View>
+
       {serverError ? (
         <HelperText type="error" visible>
           {serverError}
@@ -135,8 +159,21 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
+  brandTitle: {
+    fontFamily: 'MetalMania_400Regular',
+    fontSize: 32,
+  },
   input: {
     marginTop: 8,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  switchRowHidden: {
+    opacity: 0,
   },
   button: {
     marginTop: 16,
