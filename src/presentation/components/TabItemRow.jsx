@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Image, StyleSheet, View } from 'react-native';
 import { IconButton, Text, useTheme } from 'react-native-paper';
 
-import { getDrinkIcon } from '../../shared/constants/drinkIcons';
+import { getDrinkIcon, getUnitImage } from '../../shared/constants/drinkIcons';
 
 // Tamaño "base" (scale 1) de cada unidad dentro de la fila.
 const UNIT_BASE = { width: 38, height: 61 };
@@ -25,7 +25,7 @@ export function TabItemRow({ catalogItem, categoryIcon, quantity, onRemoveOne, d
           <View key={index} style={styles.unit}>
             {customIcon ? (
               <Image
-                source={customIcon.image}
+                source={getUnitImage(customIcon, index + 1)}
                 style={{ width: UNIT_BASE.width * customIcon.scale, height: UNIT_BASE.height * customIcon.scale }}
                 resizeMode="contain"
               />

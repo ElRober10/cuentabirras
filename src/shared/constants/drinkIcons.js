@@ -18,6 +18,13 @@
 // base) para que el icono se pinte más grande o más pequeño según el
 // tamaño REAL de la bebida — así un botellín no ocupa lo mismo que una
 // jarra grande. Valores orientativos de partida, a corregir.
+//
+// `stages` (opcional): la "escalada de borrachera". Cada bebida alcohólica
+// va cambiando de dibujo según cuántas llevas de ESA bebida en la cuenta:
+// normal (`image`, de siempre) → `images[0]` (contentillo) → `images[1]`
+// (muy borracho) → `images[2]` (vomitando, se queda así de ahí en
+// adelante). `every` marca cada cuántas unidades se sube un nivel. Usa
+// `getUnitImage(icon, unitNumber)` para pintar la unidad correcta.
 export const DRINK_ICONS = [
   // --- Cervezas ---
   {
@@ -28,6 +35,14 @@ export const DRINK_ICONS = [
     ml: 250,
     scale: 0.8,
     image: require('../../../assets/drinks/botellin.png'),
+    stages: {
+      every: 5,
+      images: [
+        require('../../../assets/drinks/botellin-s2.png'),
+        require('../../../assets/drinks/botellin-s3.png'),
+        require('../../../assets/drinks/botellin-s4.png'),
+      ],
+    },
   },
   {
     value: 'tercio',
@@ -64,6 +79,14 @@ export const DRINK_ICONS = [
     ml: 200,
     scale: 0.75,
     image: require('../../../assets/drinks/cana.png'),
+    stages: {
+      every: 5,
+      images: [
+        require('../../../assets/drinks/cana-s2.png'),
+        require('../../../assets/drinks/cana-s3.png'),
+        require('../../../assets/drinks/cana-s4.png'),
+      ],
+    },
   },
   {
     value: 'jarra',
@@ -260,6 +283,14 @@ export const DRINK_ICONS = [
     ml: 500,
     scale: 1,
     image: require('../../../assets/drinks/copa.png'),
+    stages: {
+      every: 3,
+      images: [
+        require('../../../assets/drinks/copa-s2.png'),
+        require('../../../assets/drinks/copa-s3.png'),
+        require('../../../assets/drinks/copa-s4.png'),
+      ],
+    },
   },
   {
     value: 'copa-premium',
@@ -269,6 +300,14 @@ export const DRINK_ICONS = [
     ml: 500,
     scale: 1,
     image: require('../../../assets/drinks/copa-premiun-1.png'),
+    stages: {
+      every: 3,
+      images: [
+        require('../../../assets/drinks/copa-premium-s2.png'),
+        require('../../../assets/drinks/copa-premium-s3.png'),
+        require('../../../assets/drinks/copa-premium-s4.png'),
+      ],
+    },
   },
   {
     value: 'copa-premium-2',
@@ -278,6 +317,14 @@ export const DRINK_ICONS = [
     ml: 500,
     scale: 1,
     image: require('../../../assets/drinks/copa-premium-2.png'),
+    stages: {
+      every: 3,
+      images: [
+        require('../../../assets/drinks/copa-premium-2-s2.png'),
+        require('../../../assets/drinks/copa-premium-2-s3.png'),
+        require('../../../assets/drinks/copa-premium-2-s4.png'),
+      ],
+    },
   },
   {
     value: 'chupitos',
@@ -287,6 +334,14 @@ export const DRINK_ICONS = [
     ml: 40,
     scale: 0.5,
     image: require('../../../assets/drinks/chupitos.png'),
+    stages: {
+      every: 3,
+      images: [
+        require('../../../assets/drinks/chupitos-s2.png'),
+        require('../../../assets/drinks/chupitos-s3.png'),
+        require('../../../assets/drinks/chupitos-s4.png'),
+      ],
+    },
   },
   {
     value: 'tequifresa',
@@ -305,9 +360,31 @@ export const DRINK_ICONS = [
     ml: 40,
     scale: 0.5,
     image: require('../../../assets/drinks/crema-orujo.png'),
+    stages: {
+      every: 4,
+      images: [
+        require('../../../assets/drinks/crema-orujo-s2.png'),
+        require('../../../assets/drinks/crema-orujo-s3.png'),
+        require('../../../assets/drinks/crema-orujo-s4.png'),
+      ],
+    },
   },
 ];
 
 export function getDrinkIcon(value) {
   return DRINK_ICONS.find((icon) => icon.value === value) ?? null;
+}
+
+// Dado un icono (de getDrinkIcon) y el número de unidad dentro de la cuenta
+// (1 = la primera de esa bebida, 2 = la segunda...), devuelve la imagen que
+// toca pintar según la escalada de `stages`. Si el icono no tiene `stages`
+// (bebida sin alcohol, o bebida alcohólica cuyos dibujos aún no se han
+// subido), siempre devuelve la imagen normal de siempre.
+export function getUnitImage(icon, unitNumber) {
+  if (!icon.stages) return icon.image;
+  const level = Math.floor((unitNumber - 1) / icon.stages.every);
+  if (level <= 0) return icon.image;
+  // Nivel 1 → images[0] (contentillo), nivel 2 → images[1] (borracho), y de
+  // ahí en adelante se queda fijo en images[2] (vomitando).
+  return icon.stages.images[Math.min(level, icon.stages.images.length) - 1];
 }
