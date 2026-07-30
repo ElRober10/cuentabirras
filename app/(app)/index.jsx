@@ -1,8 +1,16 @@
-import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Animated, FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, Image, StyleSheet, View } from 'react-native';
+import Animated, {
+  Easing,
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
 import { ActivityIndicator, Dialog, HelperText, Portal, Text, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -13,6 +21,42 @@ import { BarListItem } from '../../src/presentation/components/BarListItem';
 import { useAuth } from '../../src/presentation/hooks/useAuth';
 
 const PAGE_SIZE = 5;
+
+// Arranca los 3 bucles de la animación del logo (ver HomeScreen más abajo).
+// Está fuera del componente (recibe los shared values ya creados, en vez de
+// crearlos aquí) para que la asignación `algo.value = ...` no quede en el
+// mismo scope donde se llamó a useSharedValue — así el comprobador de
+// "hooks" no la confunde con estar mutando el resultado de un hook normal
+// (piensa en un useState), que sería un bug real; aquí es justo cómo se usa
+// un SharedValue de Reanimated.
+function startBrandAnimation({ entrance, sway, bounce }) {
+  entrance.value = withTiming(1, { duration: 450 });
+
+  // Vaivén continuo: un único withTiming a 1, con el 3er parámetro de
+  // withRepeat ("reverse") en true — así, en vez de reiniciar la animación
+  // desde el principio en cada vuelta (que era lo que provocaba el salto al
+  // llegar al extremo izquierdo), Reanimated la reproduce hacia atrás justo
+  // por donde vino, garantizando que no haya ningún punto de discontinuidad.
+  // Importante: para que alterne de verdad entre -1 y 1 (no entre 0 y 1),
+  // `sway` tiene que arrancar ya en -1 (ver useSharedValue(-1) más abajo) —
+  // el "reverse" siempre vuelve al valor CON EL QUE ARRANCÓ, no a un punto
+  // fijo distinto.
+  sway.value = withRepeat(withTiming(1, { duration: 650, easing: Easing.inOut(Easing.quad) }), -1, true);
+
+  // Segundo bucle, más rápido e independiente: un saltito vertical + un
+  // pequeño "pop" de tamaño, para que dé sensación de brindar con energía,
+  // no solo inclinarse. Aquí SÍ usamos una secuencia de dos tramos con
+  // easings distintos (arriba rápido, abajo suave) en vez del truco del
+  // "reverse" — es seguro porque el ciclo siempre vuelve a su mismo valor
+  // de partida (0), así que reiniciar desde ahí no produce ningún salto.
+  bounce.value = withRepeat(
+    withSequence(
+      withTiming(1, { duration: 300, easing: Easing.out(Easing.quad) }),
+      withTiming(0, { duration: 300, easing: Easing.in(Easing.quad) }),
+    ),
+    -1,
+  );
+}
 
 // Pantalla de la ruta "/(app)" — la primera que ves una vez logueado y
 // desbloqueado: cabecera (logo animado + saludo) arriba, el listado de
@@ -81,38 +125,51 @@ export default function HomeScreen() {
     },
   });
 
-  // Animación de entrada (fundido + deslizamiento) y el balanceo en bucle
-  // del icono de cerveza — ver la explicación larga en versiones anteriores
-  // de este archivo; el patrón es el mismo que en AppButton.
-  const [entrance] = useState(() => new Animated.Value(0));
-  const [sway] = useState(() => new Animated.Value(0));
+  // Animación de entrada (fundido + deslizamiento) y balanceo del icono de
+  // la caña, con react-native-reanimated en vez de la Animated de React
+  // Native. Motivo del cambio: la Animated "de toda la vida", aunque use
+  // useNativeDriver, sigue necesitando que JS reinicie cada vuelta del
+  // bucle (Animated.loop) — ese ida-y-vuelta por el puente JS↔nativo se
+  // notaba como un tirón justo al llegar a cada extremo del balanceo.
+  // Reanimated corre el bucle entero (withRepeat) en el hilo de UI, sin
+  // pasar por JS en cada vuelta, así que no debería quedar ningún punto
+  // donde "tironee".
+  const entrance = useSharedValue(0);
+  const sway = useSharedValue(-1);
+  const bounce = useSharedValue(0);
 
   useEffect(() => {
-    Animated.timing(entrance, { toValue: 1, duration: 450, useNativeDriver: true }).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(sway, { toValue: 1, duration: 900, useNativeDriver: true }),
-        Animated.timing(sway, { toValue: -1, duration: 900, useNativeDriver: true }),
-        Animated.timing(sway, { toValue: 0, duration: 450, useNativeDriver: true }),
-      ]),
-    ).start();
-  }, [entrance, sway]);
+    startBrandAnimation({ entrance, sway, bounce });
+  }, [entrance, sway, bounce]);
 
   const handleLogout = async () => {
     await logout();
     router.replace('/(auth)/login');
   };
 
-  const rotate = sway.interpolate({ inputRange: [-1, 1], outputRange: ['-12deg', '12deg'] });
-  const translateY = entrance.interpolate({ inputRange: [0, 1], outputRange: [20, 0] });
+  const headerStyle = useAnimatedStyle(() => ({
+    opacity: entrance.value,
+    transform: [{ translateY: interpolate(entrance.value, [0, 1], [20, 0]) }],
+  }));
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [
+      { rotate: `${interpolate(sway.value, [-1, 1], [-16, 16])}deg` },
+      { translateY: interpolate(bounce.value, [0, 1], [0, -6]) },
+      { scale: interpolate(bounce.value, [0, 1], [1, 1.1]) },
+    ],
+  }));
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background, paddingTop: insets.top + 16 }]}>
-      <Animated.View style={[styles.header, { opacity: entrance, transform: [{ translateY }] }]}>
+      <Animated.View style={[styles.header, headerStyle]}>
         <View style={styles.brandRow}>
-          <Animated.View style={{ transform: [{ rotate }] }}>
-            <MaterialCommunityIcons name="glass-mug-variant" size={48} color={theme.colors.primary} />
+          <Animated.View style={iconStyle}>
+            <Image
+              source={require('../../assets/drinks/cana.png')}
+              style={styles.brandIcon}
+              resizeMode="contain"
+            />
           </Animated.View>
           <Text style={styles.title}>CuentaBirras</Text>
         </View>
@@ -210,6 +267,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 12,
+  },
+  // Misma altura (48) que tenía el icono genérico que sustituye; el ancho
+  // sale de la proporción real de cana.png (428x583) para no deformarla.
+  brandIcon: {
+    width: 35,
+    height: 48,
   },
   title: {
     fontFamily: 'MetalMania_400Regular',
