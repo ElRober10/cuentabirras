@@ -20,6 +20,9 @@
  * @property {() => Promise<void>} signOut
  * @property {() => Promise<UserProfile|null>} getCurrentUser
  * @property {(callback: (user: UserProfile|null) => void) => () => void} onAuthStateChange - se llama cada vez que cambia la sesión (login/logout/renovación de token). Devuelve una función para "desuscribirse" cuando el componente que lo usa se desmonta.
+ * @property {(email: string) => Promise<void>} requestPasswordReset - manda el email de "recuperar contraseña" con un enlace que abre la app en /reset-password.
+ * @property {(params: {accessToken?: string, refreshToken?: string, code?: string}) => Promise<void>} establishRecoverySession - crea una sesión temporal a partir de los tokens/código que trae el enlace de recuperación, necesaria antes de poder llamar a updatePassword.
+ * @property {(newPassword: string) => Promise<void>} updatePassword - cambia la contraseña del usuario ya autenticado (sesión normal, o la sesión temporal de establishRecoverySession).
  */
 
 export {};

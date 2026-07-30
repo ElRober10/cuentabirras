@@ -60,6 +60,31 @@ export function useAuth() {
     clearUser();
   }, [clearUser]);
 
+  // Estas 3 son para la recuperación de contraseña — ver
+  // app/(auth)/forgot-password.jsx y app/reset-password.jsx. No tocan
+  // `setUser`/`clearUser` directamente: el cambio de sesión (si lo hay) ya
+  // llega solo a través de onAuthStateChange, de arriba.
+  const requestPasswordReset = useCallback(async (email) => {
+    await container.authRepository.requestPasswordReset(email);
+  }, []);
+
+  const establishRecoverySession = useCallback(async (params) => {
+    await container.authRepository.establishRecoverySession(params);
+  }, []);
+
+  const updatePassword = useCallback(async (newPassword) => {
+    await container.authRepository.updatePassword(newPassword);
+  }, []);
+
   // Esto es lo que reciben las pantallas al hacer useAuth().
-  return { user, isLoading, register, login, logout };
+  return {
+    user,
+    isLoading,
+    register,
+    login,
+    logout,
+    requestPasswordReset,
+    establishRecoverySession,
+    updatePassword,
+  };
 }

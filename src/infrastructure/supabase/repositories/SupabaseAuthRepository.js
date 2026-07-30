@@ -1,3 +1,5 @@
+import * as Linking from 'expo-linking';
+
 import { supabase } from '../client';
 
 // auth.users (la tabla interna de Supabase con email/contraseña) no tiene
@@ -105,5 +107,47 @@ export const supabaseAuthRepository = {
     // Devolvemos una función para "desconectar" esta suscripción cuando ya
     // no haga falta (evita fugas de memoria si el componente se desmonta).
     return () => data.subscription.unsubscribe();
+  },
+
+  // Se llama desde app/(auth)/forgot-password.jsx. `redirectTo` es el enlace
+  // que llevará el email — usamos el esquema propio de la app
+  // (`cuentabirras://reset-password`, definido en app.json) para que, al
+  // tocar el enlace desde el correo, se abra la app directamente en
+  // /reset-password en vez de una página web. Ese redirect debe estar dado
+  // de alta en Supabase (Authentication → URL Configuration → Redirect URLs).
+  async requestPasswordReset(email) {
+    const redirectTo = Linking.createURL('reset-password');
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
+  },
+
+  // Se llama desde app/reset-password.jsx nada más abrirse desde el enlace
+  // del email. Supabase puede mandar los datos de dos formas distintas según
+  // la configuración del proyecto: como access_token/refresh_token (flujo
+  // "implicit", en el trozo de la URL después de #) o como un `code` (flujo
+  // "PKCE", en la query después de ?) — aceptamos cualquiera de los dos para
+  // no depender de esa configuración.
+  async establishRecoverySession({ accessToken, refreshToken, code }) {
+    if (code) {
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
+      if (error) throw error;
+      return;
+    }
+    if (accessToken && refreshToken) {
+      const { error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (error) throw error;
+      return;
+    }
+    throw new Error('El enlace de recuperación no es válido.');
+  },
+
+  // Se llama desde app/reset-password.jsx, una vez ya hay sesión (normal o
+  // la temporal de establishRecoverySession) para fijar la contraseña nueva.
+  async updatePassword(newPassword) {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (error) throw error;
   },
 };

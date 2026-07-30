@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { HelperText, Switch, Text, TextInput } from 'react-native-paper';
 
 import { loginSchema } from '../../src/application/auth/loginSchema';
@@ -115,13 +115,19 @@ export default function LoginScreen() {
               />
             }
             error={!!errors.password}
-            style={styles.input}
+            style={[styles.input, styles.passwordInput]}
           />
         )}
       />
       <HelperText type="error" visible={!!errors.password}>
         {errors.password?.message}
       </HelperText>
+
+      <Link href="/(auth)/forgot-password" asChild>
+        <AppButton mode="text" style={styles.forgotPassword}>
+          ¿Has olvidado tu contraseña?
+        </AppButton>
+      </Link>
 
       {/* Igual que en la pantalla de inicio: este View reserva su espacio
           siempre, aunque esté vacío, para que nada "salte" mientras se
@@ -166,6 +172,13 @@ const styles = StyleSheet.create({
   input: {
     marginTop: 8,
   },
+  // Metal Mania (la letra "cerveza" del resto de la app) es decorativa y
+  // casi todo mayúsculas — perfecta para títulos, pero muy poco legible
+  // para leer una contraseña mientras la escribes. Aquí forzamos la fuente
+  // normal del sistema, solo en este campo.
+  passwordInput: {
+    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
+  },
   switchRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -174,6 +187,10 @@ const styles = StyleSheet.create({
   },
   switchRowHidden: {
     opacity: 0,
+  },
+  forgotPassword: {
+    alignSelf: 'center',
+    marginTop: 4,
   },
   button: {
     marginTop: 16,
