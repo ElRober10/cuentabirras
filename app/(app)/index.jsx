@@ -11,7 +11,7 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { ActivityIndicator, Dialog, HelperText, Portal, Text, useTheme } from 'react-native-paper';
+import { ActivityIndicator, Dialog, HelperText, IconButton, Portal, Text, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { listBarsSortedByDistance } from '../../src/application/bars/listBarsSortedByDistance';
@@ -73,6 +73,7 @@ export default function HomeScreen() {
   // Bar pendiente de confirmar su eliminación (o null si no hay ningún
   // diálogo abierto ahora mismo).
   const [barPendingRemoval, setBarPendingRemoval] = useState(null);
+  const [logoutConfirmVisible, setLogoutConfirmVisible] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -143,6 +144,7 @@ export default function HomeScreen() {
   }, [entrance, sway, bounce]);
 
   const handleLogout = async () => {
+    setLogoutConfirmVisible(false);
     await logout();
     router.replace('/(auth)/login');
   };
@@ -216,11 +218,26 @@ export default function HomeScreen() {
         )}
       </View>
 
-      <AppButton mode="text" onPress={handleLogout} style={styles.logoutButton}>
-        Cerrar sesión
-      </AppButton>
+      <IconButton
+        icon="logout"
+        size={26}
+        onPress={() => setLogoutConfirmVisible(true)}
+        style={styles.logoutButton}
+      />
 
       <Portal>
+        <Dialog visible={logoutConfirmVisible} onDismiss={() => setLogoutConfirmVisible(false)}>
+          <Dialog.Title>¿Seguro que quieres cerrar sesión?</Dialog.Title>
+          <Dialog.Actions>
+            <AppButton mode="text" onPress={() => setLogoutConfirmVisible(false)}>
+              No
+            </AppButton>
+            <AppButton mode="contained" onPress={handleLogout}>
+              Sí
+            </AppButton>
+          </Dialog.Actions>
+        </Dialog>
+
         <Dialog visible={!!barPendingRemoval} onDismiss={() => setBarPendingRemoval(null)}>
           <Dialog.Title>¿Quitar este bar?</Dialog.Title>
           <Dialog.Content>
@@ -307,7 +324,12 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     paddingHorizontal: 24,
   },
+  // alignSelf 'flex-end' lo lleva a la derecha del todo; marginBottom extra
+  // (~5mm ≈ 30dp) para separarlo de los botones de gestos/navegación del
+  // móvil, que quedaban justo debajo del "Cerrar sesión" de antes.
   logoutButton: {
-    alignSelf: 'center',
+    alignSelf: 'flex-end',
+    marginRight: 16,
+    marginBottom: 30,
   },
 });
