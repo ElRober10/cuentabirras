@@ -80,9 +80,21 @@ export default function NewBarScreen() {
 
   const onSubmit = (values) => createBar(values);
 
-  const handleUseExisting = (barId) => {
+  // Unirse a un bar ya existente: hace falta llamar a joinBar (RPC
+  // security definer, migración 0018) ANTES de navegar — hasta ese
+  // momento no eres miembro, así que ni RLS te dejaría verlo ni te saldría
+  // luego en tu lista. queryClient.invalidateQueries hace que la próxima
+  // vez que vuelvas a la pantalla principal ya salga en tu lista.
+  const handleUseExisting = async (barId) => {
     setNearbyBars([]);
-    router.replace(`/bars/${barId}`);
+    setServerError(null);
+    try {
+      await container.barRepository.joinBar(barId);
+      queryClient.invalidateQueries({ queryKey: ['bars'] });
+      router.replace(`/bars/${barId}`);
+    } catch (error) {
+      setServerError(error.message);
+    }
   };
 
   const handleCreateAnyway = handleSubmit((values) => {

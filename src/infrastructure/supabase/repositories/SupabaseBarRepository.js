@@ -46,12 +46,31 @@ export const supabaseBarRepository = {
   },
 
   async listVisibleBars() {
-    // No hace falta filtrar por usuario aquí: RLS (migración 0003, ajustada
-    // en la 0007 para excluir los bares que hayas ocultado) ya decide qué
-    // filas puede ver esta petición.
+    // No hace falta filtrar por usuario aquí: RLS (migración 0018) ya solo
+    // deja ver las filas de `bars` de las que eres miembro (bar_members).
     const { data, error } = await supabase.from('bars').select('*').order('name');
     if (error) throw error;
     return data.map(mapBar);
+  },
+
+  async findNearbyBars({ latitude, longitude, radiusMeters = 500 }) {
+    // RPC en vez de un select normal: tiene que poder devolver bares de los
+    // que TODAVÍA no eres miembro (si no, nunca detectaría un bar ajeno
+    // como posible duplicado), así que corre con permisos elevados dentro
+    // de la base de datos (ver migración 0018, find_nearby_bars) y solo
+    // trae lo justo para el aviso — id, nombre y distancia.
+    const { data, error } = await supabase.rpc('find_nearby_bars', {
+      search_lat: latitude,
+      search_lng: longitude,
+      radius_meters: radiusMeters,
+    });
+    if (error) throw error;
+    return data.map((row) => ({ id: row.id, name: row.name, distanceMeters: row.distance_meters }));
+  },
+
+  async joinBar(barId) {
+    const { error } = await supabase.rpc('join_bar', { target_bar_id: barId });
+    if (error) throw error;
   },
 
   async removeBarForCurrentUser(barId) {
