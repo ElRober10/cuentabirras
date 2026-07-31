@@ -3,7 +3,7 @@ import { useURL } from 'expo-linking';
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { ActivityIndicator, HelperText, Text, TextInput } from 'react-native-paper';
 
 import { newPasswordSchema } from '../src/application/auth/newPasswordSchema';
@@ -61,12 +61,12 @@ export default function ResetPasswordScreen() {
     // inmediato — por eso el `return` sin tocar `status`.
     if (!url || status !== 'checking') return;
 
+    // No hace falta comprobar aquí si accessToken/code vinieron vacíos:
+    // establishRecoverySession ya lanza su propio error en ese caso (ver
+    // SupabaseAuthRepository.js), que cae directo en el .catch() de abajo —
+    // así todo el "setState" de este efecto pasa por un callback async
+    // (then/catch), nunca de forma síncrona en el cuerpo del efecto.
     const { access_token: accessToken, refresh_token: refreshToken, code } = extractRecoveryParams(url);
-    if (!accessToken && !code) {
-      setStatus('invalid');
-      setLinkError('El enlace no es válido o ha caducado. Pide uno nuevo.');
-      return;
-    }
 
     establishRecoverySession({ accessToken, refreshToken, code })
       .then(() => setStatus('ready'))
@@ -151,7 +151,7 @@ export default function ResetPasswordScreen() {
             autoComplete="new-password"
             textContentType="newPassword"
             error={!!errors.password}
-            style={[styles.input, styles.passwordInput]}
+            style={styles.input}
           />
         )}
       />
@@ -171,7 +171,7 @@ export default function ResetPasswordScreen() {
             autoComplete="new-password"
             textContentType="newPassword"
             error={!!errors.confirmPassword}
-            style={[styles.input, styles.passwordInput]}
+            style={styles.input}
           />
         )}
       />
@@ -195,11 +195,6 @@ export default function ResetPasswordScreen() {
 const styles = StyleSheet.create({
   input: {
     marginTop: 8,
-  },
-  // Ver el comentario en login.jsx: Metal Mania no es legible para
-  // contraseñas, así que aquí se fuerza la fuente normal del sistema.
-  passwordInput: {
-    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
   },
   button: {
     marginTop: 16,

@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import { configureFonts, MD3DarkTheme, MD3LightTheme } from 'react-native-paper';
 
 // React Native Paper sigue el sistema de diseño "Material Design 3" (MD3) de
@@ -27,9 +28,30 @@ const amber = {
 // coge TODO el catálogo tipográfico de Material Design 3 (headlineLarge,
 // titleMedium, bodySmall...) y le cambia la fuente a todos a la vez,
 // conservando el tamaño/grosor propio de cada uno — así "Metal Mania" se
-// aplica en toda la app (títulos, botones, campos...) sin tener que ir
-// variante por variante.
-const fonts = configureFonts({ config: { fontFamily: 'MetalMania_400Regular' } });
+// aplica en toda la app (títulos, botones...) sin tener que ir variante por
+// variante.
+const baseFonts = configureFonts({ config: { fontFamily: 'MetalMania_400Regular' } });
+
+// Metal Mania es decorativa y casi todo mayúsculas — perfecta para títulos,
+// pero en los campos de texto (lo que escribes, y su etiqueta) hace
+// indistinguibles las mayúsculas de las minúsculas. React Native Paper
+// pinta el texto de CUALQUIER TextInput con la variante "bodyLarge" (y su
+// etiqueta flotante con "bodyLarge"/"bodySmall" según esté enfocada o no —
+// ver TextInputFlat.js/InputLabel.js de la librería), así que sobreescribir
+// esas 2 variantes a una fuente normal del sistema arregla TODOS los
+// campos de la app de una vez, sin tener que tocar cada pantalla.
+//
+// Ojo: NO se toca "bodyMedium" — HelperText (los mensajes de ayuda/error
+// bajo cada campo) la usa como variante por defecto, y se decidió a
+// propósito dejarlos en Metal Mania, igual que el resto de texto de la
+// app; solo lo que escribes de verdad (y su etiqueta) necesita legibilidad
+// de mayúsculas/minúsculas.
+const systemFontFamily = Platform.select({ ios: 'System', android: 'sans-serif' });
+const fonts = {
+  ...baseFonts,
+  bodyLarge: { ...baseFonts.bodyLarge, fontFamily: systemFontFamily },
+  bodySmall: { ...baseFonts.bodySmall, fontFamily: systemFontFamily },
+};
 
 // Tema para cuando el móvil está en modo claro.
 export const lightTheme = {

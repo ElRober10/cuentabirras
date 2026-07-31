@@ -295,7 +295,12 @@ const styles = StyleSheet.create({
     fontFamily: 'MetalMania_400Regular',
     fontSize: 32,
   },
+  // fontFamily explícito porque usa variant="bodyLarge", y esa variante
+  // ahora es fuente de sistema (ver theme/tokens.js) para que los INPUT se
+  // lean bien — este saludo no es un input, así que se fuerza de vuelta a
+  // Metal Mania para no perderla aquí por efecto colateral.
   greeting: {
+    fontFamily: 'MetalMania_400Regular',
     textAlign: 'center',
     marginTop: 8,
     marginBottom: 16,

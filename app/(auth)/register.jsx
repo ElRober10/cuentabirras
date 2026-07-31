@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { HelperText, Text, TextInput } from 'react-native-paper';
 
 import { registerSchema } from '../../src/application/auth/registerSchema';
@@ -166,7 +166,7 @@ export default function RegisterScreen() {
               />
             }
             error={!!errors.password}
-            style={[styles.input, styles.passwordInput]}
+            style={styles.input}
           />
         )}
       />
@@ -194,7 +194,7 @@ export default function RegisterScreen() {
             // Este error puede venir de dos sitios: el campo vacío (.min(1)) o
             // el .refine() de registerSchema.js que compara con "password".
             error={!!errors.confirmPassword}
-            style={[styles.input, styles.passwordInput]}
+            style={styles.input}
           />
         )}
       />
@@ -224,11 +224,6 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   input: {
     marginTop: 8,
-  },
-  // Ver el comentario en login.jsx: Metal Mania no es legible para
-  // contraseñas, así que aquí se fuerza la fuente normal del sistema.
-  passwordInput: {
-    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
   },
   button: {
     marginTop: 16,

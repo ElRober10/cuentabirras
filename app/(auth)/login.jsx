@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { Platform, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { HelperText, Switch, Text, TextInput } from 'react-native-paper';
 
 import { loginSchema } from '../../src/application/auth/loginSchema';
@@ -115,7 +115,7 @@ export default function LoginScreen() {
               />
             }
             error={!!errors.password}
-            style={[styles.input, styles.passwordInput]}
+            style={styles.input}
           />
         )}
       />
@@ -171,13 +171,6 @@ const styles = StyleSheet.create({
   },
   input: {
     marginTop: 8,
-  },
-  // Metal Mania (la letra "cerveza" del resto de la app) es decorativa y
-  // casi todo mayúsculas — perfecta para títulos, pero muy poco legible
-  // para leer una contraseña mientras la escribes. Aquí forzamos la fuente
-  // normal del sistema, solo en este campo.
-  passwordInput: {
-    fontFamily: Platform.select({ ios: 'System', android: 'sans-serif' }),
   },
   switchRow: {
     flexDirection: 'row',
