@@ -152,7 +152,7 @@ export default function NewBarScreen() {
           ))}
           <Dialog.Actions>
             <AppButton mode="text" onPress={handleCreateAnyway}>
-              Crear nuevo de todas formas
+              Crear un bar nuevo
             </AppButton>
           </Dialog.Actions>
         </Dialog>

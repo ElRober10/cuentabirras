@@ -27,19 +27,35 @@ async function getCurrentUserId() {
 export const supabaseBarRepository = {
   async createBar({ name, latitude, longitude }) {
     const userId = await getCurrentUserId();
+
+    // OJO con este patrón: NO encadenamos .select() al insert (mismo caso
+    // que createTab en SupabaseTabRepository.js). Si lo hiciéramos, Postgres
+    // comprobaría la política de LECTURA de `bars` (que desde la migración
+    // 0018 exige ya ser miembro) en el mismo instante en que se inserta la
+    // fila — justo antes de que el trigger on_bar_created (que te añade
+    // como miembro) haya terminado de asentarse. Eso es lo que causaba el
+    // error "new row violates row-level security policy". Separando el
+    // insert de la lectura en dos pasos, la segunda consulta ya ve el
+    // resultado del trigger sin problema.
+    const { error: insertError } = await supabase.from('bars').insert({
+      name,
+      // ?? en vez de || : si latitude es 0 (un valor real y válido cerca
+      // del ecuador/meridiano de Greenwich), || lo trataría como "falsy" y
+      // lo cambiaría por null por error; ?? solo sustituye si es
+      // null/undefined de verdad.
+      latitude: latitude ?? null,
+      longitude: longitude ?? null,
+      created_by: userId,
+    });
+    if (insertError) throw insertError;
+
     const { data, error } = await supabase
       .from('bars')
-      .insert({
-        name,
-        // ?? en vez de || : si latitude es 0 (un valor real y válido cerca
-        // del ecuador/meridiano de Greenwich), || lo trataría como "falsy" y
-        // lo cambiaría por null por error; ?? solo sustituye si es
-        // null/undefined de verdad.
-        latitude: latitude ?? null,
-        longitude: longitude ?? null,
-        created_by: userId,
-      })
-      .select()
+      .select('*')
+      .eq('created_by', userId)
+      .eq('name', name)
+      .order('created_at', { ascending: false })
+      .limit(1)
       .single();
     if (error) throw error;
     return mapBar(data);
