@@ -244,6 +244,26 @@ export const DRINK_ICONS = [
     image: require('../../../assets/drinks/red-bull.png'),
   },
 
+  // --- Agua ---
+  {
+    value: 'botella-agua-pequena',
+    label: 'Botella de agua pequeña',
+    category: 'bebida',
+    alcohol: false,
+    ml: 500,
+    scale: 0.85,
+    image: require('../../../assets/drinks/botella-agua-pequeña.png'),
+  },
+  {
+    value: 'botella-agua-grande',
+    label: 'Botella de agua grande',
+    category: 'bebida',
+    alcohol: false,
+    ml: 1500,
+    scale: 1.1,
+    image: require('../../../assets/drinks/botella-agua-grande.png'),
+  },
+
   // --- Café y chocolate ---
   {
     value: 'cafe',

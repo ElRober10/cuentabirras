@@ -165,6 +165,8 @@ export default function AppLayout() {
       <Stack.Screen name="bars/new" options={{ headerShown: true, title: 'Nuevo bar' }} />
       <Stack.Screen name="bars/[barId]/index" options={{ headerShown: false }} />
       <Stack.Screen name="bars/[barId]/tab/[tabId]" options={{ headerShown: true, title: 'Cuenta' }} />
+      <Stack.Screen name="bars/[barId]/edit" options={{ headerShown: true, title: 'Editar bar' }} />
+      <Stack.Screen name="bars/[barId]/settings" options={{ headerShown: true, title: 'Precios del bar' }} />
     </Stack>
   );
 }

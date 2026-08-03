@@ -110,7 +110,7 @@ export default function ReceiptScreen() {
       </View>
 
       <AppButton mode="contained" onPress={() => router.replace('/')} style={styles.doneButton}>
-        Volver a mis bares
+        Cerrar cuenta y volver a mis bares
       </AppButton>
       <AppButton mode="text" onPress={handleCancelClose} style={styles.cancelButton}>
         Cancelar cierre, volver a mi cuenta

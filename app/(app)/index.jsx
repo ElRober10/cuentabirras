@@ -196,6 +196,7 @@ export default function HomeScreen() {
               <BarListItem
                 bar={item}
                 onPress={() => router.push(`/bars/${item.id}`)}
+                onRequestEdit={(bar) => router.push({ pathname: `/bars/${bar.id}/edit`, params: { name: bar.name } })}
                 onRequestRemove={setBarPendingRemoval}
               />
             )}
