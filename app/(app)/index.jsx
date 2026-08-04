@@ -219,12 +219,10 @@ export default function HomeScreen() {
         )}
       </View>
 
-      <IconButton
-        icon="logout"
-        size={26}
-        onPress={() => setLogoutConfirmVisible(true)}
-        style={styles.logoutButton}
-      />
+      <View style={styles.cornerButtons}>
+        <IconButton icon="cog-outline" size={26} onPress={() => router.push('/settings')} />
+        <IconButton icon="logout" size={26} onPress={() => setLogoutConfirmVisible(true)} />
+      </View>
 
       <Portal>
         <Dialog visible={logoutConfirmVisible} onDismiss={() => setLogoutConfirmVisible(false)}>
@@ -333,9 +331,10 @@ const styles = StyleSheet.create({
   // alignSelf 'flex-end' lo lleva a la derecha del todo; marginBottom extra
   // (~5mm ≈ 30dp) para separarlo de los botones de gestos/navegación del
   // móvil, que quedaban justo debajo del "Cerrar sesión" de antes.
-  logoutButton: {
+  cornerButtons: {
+    flexDirection: 'row',
     alignSelf: 'flex-end',
-    marginRight: 16,
+    marginRight: 8,
     marginBottom: 30,
   },
 });

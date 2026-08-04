@@ -1,3 +1,4 @@
+import { supabaseAccountLinkRepository } from '../infrastructure/supabase/repositories/SupabaseAccountLinkRepository';
 import { supabaseAuthRepository } from '../infrastructure/supabase/repositories/SupabaseAuthRepository';
 import { supabaseBarPhotoRepository } from '../infrastructure/supabase/repositories/SupabaseBarPhotoRepository';
 import { supabaseBarRepository } from '../infrastructure/supabase/repositories/SupabaseBarRepository';
@@ -19,6 +20,7 @@ import { supabaseTabRepository } from '../infrastructure/supabase/repositories/S
 // Lo usa: src/presentation/hooks/useAuth.js, y a partir de ahora también los
 // casos de uso de application/bars/ y application/tabs/, y las pantallas de bares.
 export const container = {
+  accountLinkRepository: supabaseAccountLinkRepository,
   authRepository: supabaseAuthRepository,
   barRepository: supabaseBarRepository,
   catalogRepository: supabaseCatalogRepository,

@@ -1,11 +1,15 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Redirect, Stack } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 
+import { container } from '../../src/di/container';
 import { biometricAuth } from '../../src/infrastructure/auth/biometricAuth';
 import { AppButton } from '../../src/presentation/components/AppButton';
+import { PendingLinkInvitationDialog } from '../../src/presentation/components/PendingLinkInvitationDialog';
 import { useAuth } from '../../src/presentation/hooks/useAuth';
+import { usePendingLinkInvitations } from '../../src/presentation/hooks/usePendingLinkInvitations';
 
 // Este es el archivo más "enredado" de la app, así que primero la idea
 // general: este _layout es el GUARDIÁN de todo lo que hay dentro del grupo
@@ -36,12 +40,29 @@ function withTimeout(promise, ms) {
 export default function AppLayout() {
   const { user, isLoading } = useAuth();
   const theme = useTheme();
+  const queryClient = useQueryClient();
   // locked: ¿la sesión está "bloqueada" pendiente de huella? Empieza en
   // true por seguridad (mejor pedir de más que dejar pasar sin querer).
   const [locked, setLocked] = useState(true);
   // checkingLock: ¿estamos AHORA MISMO comprobando la huella? (distinto de
   // `locked`: puede que aún no sepamos si hace falta bloquear o no).
   const [checkingLock, setCheckingLock] = useState(true);
+
+  // Comprobación de invitaciones de "vincular cuenta" pendientes, en cuanto
+  // hay sesión de verdad desbloqueada (no antes: la RPC necesita auth.uid()).
+  // Los Hooks no se pueden llamar solo a veces, así que esto se monta
+  // siempre — es el `enabled` el que decide si dispara la petición o no.
+  const sessionReady = !isLoading && !!user && !checkingLock && !locked;
+  const pendingInvitationsQuery = usePendingLinkInvitations(sessionReady);
+  const pendingInvitation = pendingInvitationsQuery.data?.[0] ?? null;
+
+  const respondMutation = useMutation({
+    mutationFn: ({ requestId, accept }) => container.accountLinkRepository.respondToInvitation({ requestId, accept }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['pendingLinkInvitations'] });
+      queryClient.invalidateQueries({ queryKey: ['myAccountLink'] });
+    },
+  });
 
   useEffect(() => {
     // Si todavía no sabemos si hay usuario, o no lo hay, no tiene sentido
@@ -154,20 +175,31 @@ export default function AppLayout() {
   // cabecera nativa, porque eso nos da gratis el botón "atrás" y el gesto
   // de deslizar para volver.
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        headerStyle: { backgroundColor: theme.colors.surface },
-        headerTintColor: theme.colors.onSurface,
-      }}
-    >
-      <Stack.Screen name="index" />
-      <Stack.Screen name="bars/new" options={{ headerShown: true, title: 'Nuevo bar' }} />
-      <Stack.Screen name="bars/[barId]/index" options={{ headerShown: false }} />
-      <Stack.Screen name="bars/[barId]/tab/[tabId]" options={{ headerShown: true, title: 'Cuenta' }} />
-      <Stack.Screen name="bars/[barId]/edit" options={{ headerShown: true, title: 'Editar bar' }} />
-      <Stack.Screen name="bars/[barId]/settings" options={{ headerShown: true, title: 'Precios del bar' }} />
-    </Stack>
+    <>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          headerStyle: { backgroundColor: theme.colors.surface },
+          headerTintColor: theme.colors.onSurface,
+        }}
+      >
+        <Stack.Screen name="index" />
+        <Stack.Screen name="bars/new" options={{ headerShown: true, title: 'Nuevo bar' }} />
+        <Stack.Screen name="bars/[barId]/index" options={{ headerShown: false }} />
+        <Stack.Screen name="bars/[barId]/tab/[tabId]" options={{ headerShown: true, title: 'Cuenta' }} />
+        <Stack.Screen name="bars/[barId]/edit" options={{ headerShown: true, title: 'Editar bar' }} />
+        <Stack.Screen name="bars/[barId]/settings" options={{ headerShown: true, title: 'Precios del bar' }} />
+        <Stack.Screen name="settings/index" options={{ headerShown: true, title: 'Ajustes' }} />
+        <Stack.Screen name="settings/link-account" options={{ headerShown: true, title: 'Vincular cuenta' }} />
+      </Stack>
+
+      <PendingLinkInvitationDialog
+        invitation={pendingInvitation}
+        isResponding={respondMutation.isPending}
+        onAccept={() => respondMutation.mutate({ requestId: pendingInvitation.requestId, accept: true })}
+        onReject={() => respondMutation.mutate({ requestId: pendingInvitation.requestId, accept: false })}
+      />
+    </>
   );
 }
 
