@@ -43,6 +43,12 @@
         {
           "locationWhenInUsePermission": "CuentaBirras usa tu ubicación para ordenar los bares por cercanía y evitar crear bares duplicados."
         }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "CuentaBirras necesita acceso a tus contactos para poder invitar a alguien a vincular vuestras cuentas."
+        }
       ]
     ],
     "extra": {

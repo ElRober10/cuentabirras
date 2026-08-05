@@ -9,14 +9,24 @@ import { AppButton } from './AppButton';
 // la pantalla de la cuenta abierta de un bar.
 export function LinkedAccountBanner({ link, onUnlink, isUnlinking }) {
   const theme = useTheme();
+  const linkedSince = new Date(link.linkedSince).toLocaleDateString('es-ES', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.surfaceVariant }]}>
-      <MaterialCommunityIcons name="link-variant" size={22} color={theme.colors.primary} />
-      <Text variant="titleMedium" style={styles.text}>
-        Cuenta vinculada con {link.partnerFirstName} {link.partnerLastName}
+    <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
+      <View style={[styles.iconBadge, { backgroundColor: theme.colors.primaryContainer }]}>
+        <MaterialCommunityIcons name="link-variant" size={30} color={theme.colors.onPrimaryContainer} />
+      </View>
+      <Text variant="titleLarge" style={styles.title}>
+        Vinculada con {link.partnerFirstName} {link.partnerLastName}
       </Text>
-      <AppButton mode="outlined" onPress={onUnlink} loading={isUnlinking}>
+      <Text style={[styles.subtitle, { color: theme.colors.onSurfaceVariant }]}>
+        Compartís la cuenta desde el {linkedSince}
+      </Text>
+      <AppButton mode="outlined" onPress={onUnlink} loading={isUnlinking} style={styles.button}>
         Desvincular cuenta
       </AppButton>
     </View>
@@ -24,12 +34,29 @@ export function LinkedAccountBanner({ link, onUnlink, isUnlinking }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    borderRadius: 12,
-    padding: 16,
-    gap: 12,
+  card: {
+    borderRadius: 20,
+    borderWidth: 1,
+    padding: 24,
+    alignItems: 'center',
   },
-  text: {
-    marginBottom: 4,
+  iconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  title: {
+    textAlign: 'center',
+  },
+  subtitle: {
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  button: {
+    marginTop: 20,
+    alignSelf: 'stretch',
   },
 });
