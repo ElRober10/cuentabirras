@@ -8,7 +8,7 @@ import { ActivityIndicator, Divider, Snackbar, Text, useTheme } from 'react-nati
 import { container } from '../../../../src/di/container';
 import { SetPriceDialog } from '../../../../src/presentation/components/SetPriceDialog';
 import { getDrinkCategory } from '../../../../src/shared/constants/drinkCategories';
-import { DRINK_ICONS, getUnitImage } from '../../../../src/shared/constants/drinkIcons';
+import { DRINK_ICONS, GENERIC_DRINK_ICON_IMAGE, getUnitImage } from '../../../../src/shared/constants/drinkIcons';
 import { centsToEuros } from '../../../../src/shared/utils/money';
 
 // Pantalla de ajustes del bar: el catálogo completo de precios, para poder
@@ -108,15 +108,11 @@ export default function BarSettingsScreen() {
             const priceCents = row.catalogItem?.priceCents ?? null;
             return (
               <Pressable onPress={() => handleEditPrice(row)} style={styles.row}>
-                {row.icon ? (
-                  <Image source={getUnitImage(row.icon, 1)} style={styles.icon} resizeMode="contain" />
-                ) : (
-                  <MaterialCommunityIcons
-                    name={getDrinkCategory(row.catalogItem?.category).icon}
-                    size={28}
-                    color={row.catalogItem?.color}
-                  />
-                )}
+                <Image
+                  source={row.icon ? getUnitImage(row.icon, 1) : GENERIC_DRINK_ICON_IMAGE}
+                  style={styles.icon}
+                  resizeMode="contain"
+                />
                 <Text variant="titleMedium" style={styles.name} numberOfLines={1}>
                   {row.name}
                 </Text>

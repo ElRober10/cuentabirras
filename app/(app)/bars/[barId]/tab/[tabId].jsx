@@ -12,7 +12,6 @@ import { AddDrinkModal } from '../../../../../src/presentation/components/AddDri
 import { AppButton } from '../../../../../src/presentation/components/AppButton';
 import { SetPriceDialog } from '../../../../../src/presentation/components/SetPriceDialog';
 import { TabItemRow } from '../../../../../src/presentation/components/TabItemRow';
-import { getDrinkCategory } from '../../../../../src/shared/constants/drinkCategories';
 import { centsToEuros } from '../../../../../src/shared/utils/money';
 
 // La pantalla de la cuenta abierta: un "recibo" con una fila por cada
@@ -62,6 +61,24 @@ export default function TabScreen() {
       counts[item.catalogItemId] = (counts[item.catalogItemId] ?? 0) + item.quantity;
     }
     return counts;
+  }, [tabItemsQuery.data]);
+
+  // La hora a la que se pidió CADA unidad (para el icono "volteable" que
+  // enseña la hora al tocarlo, ver TabItemRow/DrinkUnitIcon). Cada fila de
+  // tab_items tiene su propio created_at; si se añadieron varias unidades
+  // de golpe (quantity > 1), comparten esa misma hora — tiene sentido, se
+  // pidieron a la vez. listByTab ya devuelve las filas ordenadas por
+  // created_at, así que al ir "aplanando" quantity en el mismo orden, el
+  // array de cada bebida queda también en orden cronológico.
+  const timestampsByItem = useMemo(() => {
+    const timestamps = {};
+    for (const item of tabItemsQuery.data ?? []) {
+      if (!timestamps[item.catalogItemId]) timestamps[item.catalogItemId] = [];
+      for (let i = 0; i < item.quantity; i += 1) {
+        timestamps[item.catalogItemId].push(item.createdAt);
+      }
+    }
+    return timestamps;
   }, [tabItemsQuery.data]);
 
   // Una fila por cada bebida con al menos una unidad en esta cuenta, en el
@@ -240,8 +257,8 @@ export default function TabScreen() {
           renderItem={({ item: row }) => (
             <TabItemRow
               catalogItem={row.catalogItem}
-              categoryIcon={getDrinkCategory(row.catalogItem.category).icon}
               quantity={row.quantity}
+              timestamps={timestampsByItem[row.catalogItem.id]}
               onRemoveOne={() => removeOneMutation.mutate(row.catalogItem.id)}
               disabled={removeOneMutation.isPending}
             />
@@ -252,7 +269,18 @@ export default function TabScreen() {
         />
       )}
 
-      <FAB icon="plus" style={[styles.fab, { backgroundColor: theme.colors.primary }]} onPress={handleOpenAddDrink} />
+      {/* Como el fondo del FAB se fuerza a mano (theme.colors.primary), Paper
+          no sabe de qué color pintar el "+" para que contraste bien — sin
+          `color` explícito, en modo oscuro salía blanco sobre un ámbar ya
+          claro de por sí, casi invisible. `onPrimary` es justo el color que
+          el propio tema ya define para "texto/icono legible encima de
+          primary" en los dos modos (tokens.js). */}
+      <FAB
+        icon="plus"
+        color={theme.colors.onPrimary}
+        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+        onPress={handleOpenAddDrink}
+      />
 
       <AddDrinkModal
         key={modalVisible ? 'add-drink-open' : 'add-drink-closed'}

@@ -4,7 +4,7 @@ import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { HelperText, IconButton, Modal, Portal, SegmentedButtons, Text, TextInput, useTheme } from 'react-native-paper';
 
 import { DRINK_CATEGORIES, getDrinkCategory } from '../../shared/constants/drinkCategories';
-import { DRINK_ICONS } from '../../shared/constants/drinkIcons';
+import { DRINK_ICONS, GENERIC_DRINK_ICON_IMAGE } from '../../shared/constants/drinkIcons';
 import { centsToEuros } from '../../shared/utils/money';
 import { AppButton } from './AppButton';
 
@@ -32,6 +32,10 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
   const [step, setStep] = useState('picker');
   const [categoryTab, setCategoryTab] = useState('bebida');
   const [selectedIcon, setSelectedIcon] = useState(null);
+  // Bebida "Otro" ya creada antes en este bar (nombre a mano, sin icono de
+  // la lista) que el usuario elige directamente de la rejilla — distinto de
+  // selectedIcon porque no viene de DRINK_ICONS.
+  const [selectedCustomItemId, setSelectedCustomItemId] = useState(null);
   const [otherName, setOtherName] = useState('');
   const [otherNameError, setOtherNameError] = useState(null);
   const [quantity, setQuantity] = useState(1);
@@ -55,10 +59,35 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
 
   // Si ya existe una bebida con este icono en el catálogo de este bar, se
   // reutiliza (con su precio, si lo tenía) en vez de crear una duplicada.
-  const existingItem = iconInfo ? (existingCatalogItems ?? []).find((item) => item.icon === iconInfo.value) : null;
+  const existingItemFromIcon = iconInfo ? (existingCatalogItems ?? []).find((item) => item.icon === iconInfo.value) : null;
+
+  // Bebidas "Otro" (nombre a mano, sin icono) que este bar ya tiene en su
+  // catálogo — se ofrecen como tarjetas más en la rejilla, para no obligar
+  // a reescribir el nombre exacto cada vez (y para no chocar con el
+  // `unique(bar_id, name)` de la base de datos si lo haces).
+  const customItemsInTab = useMemo(
+    () =>
+      (existingCatalogItems ?? [])
+        .filter((item) => !item.icon && item.category === categoryTab)
+        .sort((a, b) => a.name.localeCompare(b.name, 'es')),
+    [existingCatalogItems, categoryTab],
+  );
+
+  const customItemInfo = selectedCustomItemId
+    ? (existingCatalogItems ?? []).find((item) => item.id === selectedCustomItemId)
+    : null;
+
+  const existingItem = customItemInfo ?? existingItemFromIcon;
 
   const handlePickIcon = (value) => {
     setSelectedIcon(value);
+    setSelectedCustomItemId(null);
+    setStep('detail');
+  };
+
+  const handlePickCustomItem = (item) => {
+    setSelectedCustomItemId(item.id);
+    setSelectedIcon(null);
     setStep('detail');
   };
 
@@ -67,14 +96,27 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
   // nombre es obligatorio y falta (caso "Otro"), devuelve null y ya deja
   // marcado el error en el propio campo.
   const buildDescriptor = () => {
-    const name = iconInfo ? iconInfo.label : otherName.trim();
-    if (!iconInfo && name.length === 0) {
+    const name = iconInfo ? iconInfo.label : customItemInfo ? customItemInfo.name : otherName.trim();
+    if (!iconInfo && !customItemInfo && name.length === 0) {
       setOtherNameError('Obligatorio');
       return null;
     }
     const category = getDrinkCategory(categoryTab);
+
+    // Red de seguridad: si escribiste a mano (paso "Otro") el mismo nombre
+    // que una bebida "Otro" que este bar ya tiene, se reutiliza esa en vez
+    // de intentar crear una duplicada — createItem fallaría por el
+    // `unique(bar_id, name)` de la base de datos (era justo el bug: cerrar
+    // una cuenta, abrir otra, y no poder volver a añadir la misma bebida
+    // sin icono porque no aparecía en la rejilla y reescribir el nombre
+    // chocaba con la que ya existía).
+    const nameMatch =
+      !iconInfo && !customItemInfo
+        ? (existingCatalogItems ?? []).find((item) => item.name.trim().toLowerCase() === name.toLowerCase())
+        : null;
+
     return {
-      existingItem: existingItem ?? null,
+      existingItem: existingItem ?? nameMatch ?? null,
       name,
       icon: iconInfo ? iconInfo.value : null,
       category: category.value,
@@ -125,6 +167,14 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
                     />
                   </Pressable>
                 ))}
+                {customItemsInTab.map((item) => (
+                  <Pressable key={item.id} onPress={() => handlePickCustomItem(item)} style={styles.iconTile}>
+                    <Image source={GENERIC_DRINK_ICON_IMAGE} style={styles.customTileImage} resizeMode="contain" />
+                    <Text style={styles.otherLabel} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                  </Pressable>
+                ))}
                 <Pressable onPress={() => handlePickIcon(OTHER_ICON)} style={[styles.iconTile, styles.otherTile]}>
                   <MaterialCommunityIcons name="dots-horizontal" size={28} color={theme.colors.onSurfaceVariant} />
                   <Text style={styles.otherLabel}>Otro</Text>
@@ -143,7 +193,9 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
           <>
             <View style={styles.detailHeader}>
               <IconButton icon="arrow-left" onPress={() => setStep('picker')} style={styles.backButton} />
-              <Text variant="titleMedium">{iconInfo ? iconInfo.label : 'Bebida nueva'}</Text>
+              <Text variant="titleMedium">
+                {iconInfo ? iconInfo.label : customItemInfo ? customItemInfo.name : 'Bebida nueva'}
+              </Text>
             </View>
 
             {iconInfo ? (
@@ -155,6 +207,10 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
                 ]}
                 resizeMode="contain"
               />
+            ) : customItemInfo ? (
+              <View style={[styles.customDetailIcon, { backgroundColor: theme.colors.surfaceVariant }]}>
+                <Image source={GENERIC_DRINK_ICON_IMAGE} style={styles.customDetailImage} resizeMode="contain" />
+              </View>
             ) : (
               <>
                 <TextInput
@@ -247,6 +303,10 @@ const styles = StyleSheet.create({
     fontSize: 10,
     marginTop: 2,
   },
+  customTileImage: {
+    width: 28,
+    height: 28,
+  },
   underConstruction: {
     alignItems: 'center',
     paddingVertical: 32,
@@ -271,6 +331,22 @@ const styles = StyleSheet.create({
   detailImage: {
     alignSelf: 'center',
     marginVertical: 12,
+  },
+  // Bebida "Otro" ya existente: sin ilustración propia, así que se muestra
+  // el icono genérico de su categoría dentro de una insignia circular, en
+  // vez del dibujo grande de las bebidas con icono de verdad.
+  customDetailIcon: {
+    alignSelf: 'center',
+    marginVertical: 12,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customDetailImage: {
+    width: 64,
+    height: 64,
   },
   input: {
     marginTop: 24,

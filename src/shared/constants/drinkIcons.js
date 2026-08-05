@@ -243,6 +243,15 @@ export const DRINK_ICONS = [
     scale: 0.75,
     image: require('../../../assets/drinks/red-bull.png'),
   },
+  {
+    value: 'zumo',
+    label: 'Zumo',
+    category: 'bebida',
+    alcohol: false,
+    ml: 330,
+    scale: 0.85,
+    image: require('../../../assets/drinks/zumo.png'),
+  },
 
   // --- Agua ---
   {
@@ -390,6 +399,17 @@ export const DRINK_ICONS = [
     },
   },
 ];
+
+// Icono "genérico": se pinta cuando una bebida NO tiene ninguno de los
+// iconos de arriba asignado (`item.icon === null` — nace así al crearla con
+// "Otro", nombre a mano). A propósito NO vive dentro de DRINK_ICONS: si
+// estuviera ahí, aparecería como una tarjeta más, seleccionable, tanto en
+// el selector de "Bebida nueva" como en la lista de precios del bar — y no
+// es una bebida de verdad que se pueda elegir para crear, es solo el
+// dibujo de respaldo de una que ya existe. Por eso solo se usa desde fuera
+// (TabItemRow, AddDrinkModal al mostrar una bebida "Otro" ya creada,
+// settings.jsx), nunca listado junto a las demás.
+export const GENERIC_DRINK_ICON_IMAGE = require('../../../assets/drinks/generica.png');
 
 export function getDrinkIcon(value) {
   return DRINK_ICONS.find((icon) => icon.value === value) ?? null;
