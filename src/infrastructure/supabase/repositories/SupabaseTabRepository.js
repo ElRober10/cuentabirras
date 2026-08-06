@@ -80,4 +80,18 @@ export const supabaseTabRepository = {
     if (error) throw error;
     return data.map(mapTab);
   },
+
+  async getMyTabHistory() {
+    const { data, error } = await supabase.rpc('get_my_tab_history');
+    if (error) throw error;
+    return data.map((row) => ({
+      tabId: row.tab_id,
+      barId: row.bar_id,
+      barName: row.bar_name,
+      status: row.status,
+      createdAt: row.created_at,
+      closedAt: row.closed_at,
+      totalCents: row.total_cents,
+    }));
+  },
 };

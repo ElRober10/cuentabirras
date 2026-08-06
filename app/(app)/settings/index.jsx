@@ -3,8 +3,8 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 
-// Menú de Ajustes: de momento un único ítem ("Vincular cuenta"), aquí es
-// donde se irán añadiendo más opciones de configuración en el futuro.
+// Menú de Ajustes: aquí es donde se irán añadiendo más opciones de
+// configuración en el futuro.
 export default function SettingsScreen() {
   const theme = useTheme();
 
@@ -21,6 +21,18 @@ export default function SettingsScreen() {
         </View>
         <MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.onSurfaceVariant} />
       </Pressable>
+
+      <Pressable
+        onPress={() => router.push('/settings/history')}
+        style={[styles.option, { borderColor: theme.colors.outlineVariant }]}
+      >
+        <MaterialCommunityIcons name="history" size={26} color={theme.colors.primary} />
+        <View style={styles.optionText}>
+          <Text variant="titleMedium">Histórico de cuentas</Text>
+          <Text style={{ color: theme.colors.onSurfaceVariant }}>Revisa cuentas pasadas y reábrelas si hace falta</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.onSurfaceVariant} />
+      </Pressable>
     </View>
   );
 }
@@ -29,6 +41,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    gap: 12,
   },
   option: {
     flexDirection: 'row',
