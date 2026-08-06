@@ -34,9 +34,16 @@ yarn-error.*
 .env
 .env*.local
 
-# typescript
+# typescript — el proyecto es JS a propósito (ver AGENTS.md); esto solo lo
+# regenera solo Expo al detectar los .ts de supabase/functions/ (Edge
+# Functions de Deno, ajenas a la app), no hace falta commitearlo.
 *.tsbuildinfo
+tsconfig.json
 
 # generated native folders
 /ios
 /android
+
+# Supabase CLI: estado local de `supabase link`/`functions deploy` (id de
+# proyecto, versiones...) — nada de esto es del código del proyecto en sí.
+supabase/.temp/

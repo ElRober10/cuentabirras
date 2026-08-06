@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 
+import { registerPushToken } from '../../src/application/auth/registerPushToken';
 import { container } from '../../src/di/container';
 import { biometricAuth } from '../../src/infrastructure/auth/biometricAuth';
 import { AppButton } from '../../src/presentation/components/AppButton';
@@ -58,11 +59,25 @@ export default function AppLayout() {
 
   const respondMutation = useMutation({
     mutationFn: ({ requestId, accept }) => container.accountLinkRepository.respondToInvitation({ requestId, accept }),
-    onSuccess: () => {
+    onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['pendingLinkInvitations'] });
       queryClient.invalidateQueries({ queryKey: ['myAccountLink'] });
+      // Push (Fase D2) al remitente, avisándole de la respuesta. "Best
+      // effort": la respuesta ya ha quedado guardada de todas formas.
+      container.accountLinkRepository.notifyInvitationResponded(variables.requestId).catch((error) => {
+        console.warn('No se pudo enviar el push de respuesta:', error);
+      });
     },
   });
+
+  // Registro del token de push (Fase D2), una vez por sesión desbloqueada.
+  // "Best effort" de principio a fin (ver registerPushToken.js): en Expo Go,
+  // sin permiso, o sin Play Services, simplemente no queda ningún token
+  // guardado — nunca debe bloquear ni ensuciar el resto del login.
+  useEffect(() => {
+    if (!sessionReady) return;
+    registerPushToken();
+  }, [sessionReady]);
 
   useEffect(() => {
     // Si todavía no sabemos si hay usuario, o no lo hay, no tiene sentido
@@ -191,6 +206,7 @@ export default function AppLayout() {
         <Stack.Screen name="bars/[barId]/settings" options={{ headerShown: true, title: 'Precios del bar' }} />
         <Stack.Screen name="settings/index" options={{ headerShown: true, title: 'Ajustes' }} />
         <Stack.Screen name="settings/link-account" options={{ headerShown: true, title: 'Vincular cuenta' }} />
+        <Stack.Screen name="settings/history" options={{ headerShown: true, title: 'Histórico de cuentas' }} />
       </Stack>
 
       <PendingLinkInvitationDialog

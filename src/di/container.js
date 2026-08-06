@@ -1,4 +1,5 @@
 import { expoContactsRepository } from '../infrastructure/expo/repositories/ExpoContactsRepository';
+import { expoPushNotificationRepository } from '../infrastructure/expo/repositories/ExpoPushNotificationRepository';
 import { supabaseAccountLinkRepository } from '../infrastructure/supabase/repositories/SupabaseAccountLinkRepository';
 import { supabaseAuthRepository } from '../infrastructure/supabase/repositories/SupabaseAuthRepository';
 import { supabaseBarPhotoRepository } from '../infrastructure/supabase/repositories/SupabaseBarPhotoRepository';
@@ -24,6 +25,7 @@ export const container = {
   accountLinkRepository: supabaseAccountLinkRepository,
   authRepository: supabaseAuthRepository,
   contactsRepository: expoContactsRepository,
+  pushNotificationRepository: expoPushNotificationRepository,
   barRepository: supabaseBarRepository,
   catalogRepository: supabaseCatalogRepository,
   tabRepository: supabaseTabRepository,

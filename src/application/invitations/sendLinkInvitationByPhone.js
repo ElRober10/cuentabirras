@@ -18,6 +18,15 @@ export async function sendLinkInvitationByPhone({ phone }) {
 
   const result = await container.accountLinkRepository.sendInvitation({ phone: normalizedPhone });
 
+  // El push (Fase D2) solo tiene sentido si el destinatario ya tiene cuenta
+  // — si no, no hay ningún push_token al que mandar nada (para ese caso ya
+  // está el propio WhatsApp de aquí abajo). "Best effort": no bloquea nada.
+  if (result.matchedUserId) {
+    container.accountLinkRepository.notifyInvitationCreated(result.requestId).catch((error) => {
+      console.warn('No se pudo enviar el push de invitación:', error);
+    });
+  }
+
   const digitsOnly = normalizedPhone.replace(/[^0-9]/g, '');
   const message = buildInvitationMessage();
   await Linking.openURL(`https://wa.me/${digitsOnly}?text=${encodeURIComponent(message)}`);

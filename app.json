@@ -49,7 +49,8 @@
         {
           "contactsPermission": "CuentaBirras necesita acceso a tus contactos para poder invitar a alguien a vincular vuestras cuentas."
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "extra": {
       "router": {},

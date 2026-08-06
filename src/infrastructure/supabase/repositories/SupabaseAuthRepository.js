@@ -150,4 +150,16 @@ export const supabaseAuthRepository = {
     const { error } = await supabase.auth.updateUser({ password: newPassword });
     if (error) throw error;
   },
+
+  // Se llama una vez por sesión desde application/auth/registerPushToken.js.
+  // Update directo (no RPC): profiles_update_own ya deja a cualquiera tocar
+  // su propia fila.
+  async updatePushToken(token) {
+    const { data } = await supabase.auth.getSession();
+    const { error } = await supabase
+      .from('profiles')
+      .update({ push_token: token })
+      .eq('id', data.session.user.id);
+    if (error) throw error;
+  },
 };

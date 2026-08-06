@@ -86,4 +86,19 @@ export const supabaseAccountLinkRepository = {
       expiresAt: row.expires_at,
     };
   },
+
+  async sendInvitationEmail(requestId) {
+    const { error } = await supabase.functions.invoke('send-link-invitation-email', { body: { requestId } });
+    if (error) throw error;
+  },
+
+  async notifyInvitationCreated(requestId) {
+    const { error } = await supabase.functions.invoke('notify-link-invitation-created', { body: { requestId } });
+    if (error) throw error;
+  },
+
+  async notifyInvitationResponded(requestId) {
+    const { error } = await supabase.functions.invoke('notify-link-invitation-responded', { body: { requestId } });
+    if (error) throw error;
+  },
 };

@@ -43,6 +43,9 @@
  * @property {() => Promise<AccountLink|null>} getMyLink - Tu vínculo activo (con el nombre de la otra persona), o `null` si no estás vinculado.
  * @property {() => Promise<PendingLinkInvitation[]>} getMyPendingInvitations - Invitaciones pendientes dirigidas a ti (por id ya resuelto, o por coincidencia de tu propio teléfono/email). Se llama tras cada login.
  * @property {() => Promise<SentLinkInvitation|null>} getMySentInvitation - Tu invitación pendiente enviada (para poder cancelarla), o `null` si no tienes ninguna.
+ * @property {(requestId: string) => Promise<void>} sendInvitationEmail - Dispara el email real de aviso (Edge Function `send-link-invitation-email`, Fase D1) para una invitación enviada por email. "Best effort": si falla, la invitación ya existe igualmente, quien llama decide si lo trata como error o lo ignora.
+ * @property {(requestId: string) => Promise<void>} notifyInvitationCreated - Dispara el push real (Fase D2) al destinatario de una invitación recién creada, si ya tiene cuenta. "Best effort".
+ * @property {(requestId: string) => Promise<void>} notifyInvitationResponded - Dispara el push real (Fase D2) al remitente, avisando de que se aceptó/rechazó su invitación. "Best effort".
  */
 
 export {};

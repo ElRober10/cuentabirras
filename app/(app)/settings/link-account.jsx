@@ -6,6 +6,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, HelperText, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
 
 import { linkInvitationEmailSchema } from '../../../src/application/invitations/linkInvitationEmailSchema';
+import { sendLinkInvitationByEmail } from '../../../src/application/invitations/sendLinkInvitationByEmail';
 import { sendLinkInvitationByPhone } from '../../../src/application/invitations/sendLinkInvitationByPhone';
 import { container } from '../../../src/di/container';
 import { AppButton } from '../../../src/presentation/components/AppButton';
@@ -44,7 +45,7 @@ export default function LinkAccountScreen() {
   });
 
   const sendMutation = useMutation({
-    mutationFn: (email) => container.accountLinkRepository.sendInvitation({ email }),
+    mutationFn: (email) => sendLinkInvitationByEmail({ email }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['mySentLinkInvitation'] }),
   });
 

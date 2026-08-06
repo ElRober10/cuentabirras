@@ -23,6 +23,7 @@
  * @property {(email: string) => Promise<void>} requestPasswordReset - manda el email de "recuperar contraseña" con un enlace que abre la app en /reset-password.
  * @property {(params: {accessToken?: string, refreshToken?: string, code?: string}) => Promise<void>} establishRecoverySession - crea una sesión temporal a partir de los tokens/código que trae el enlace de recuperación, necesaria antes de poder llamar a updatePassword.
  * @property {(newPassword: string) => Promise<void>} updatePassword - cambia la contraseña del usuario ya autenticado (sesión normal, o la sesión temporal de establishRecoverySession).
+ * @property {(token: string) => Promise<void>} updatePushToken - guarda el token de notificaciones push de Expo de este dispositivo en profiles.push_token (Fase D2), para que se le puedan mandar avisos.
  */
 
 export {};
