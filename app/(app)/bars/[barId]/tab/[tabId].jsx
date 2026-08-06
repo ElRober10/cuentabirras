@@ -1,7 +1,8 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, FAB, Snackbar, Text, useTheme } from 'react-native-paper';
 
 import { listCatalogSortedByPopularity } from '../../../../../src/application/catalog/listCatalogSortedByPopularity';
@@ -51,6 +52,23 @@ export default function TabScreen() {
   const iconPopularityQuery = useQuery({
     queryKey: ['iconPopularity'],
     queryFn: () => container.catalogRepository.getIconPopularity(),
+  });
+
+  // Fase E: si tienes una cuenta vinculada (Ajustes → Vincular cuenta), se
+  // avisa aquí también, en CUALQUIER cuenta abierta — de momento sin el
+  // matiz de "solo si la pareja también tiene cuenta abierta en este bar"
+  // ni el toggle por-cuenta-individual (simplificación aceptada, ver
+  // memoria de la Fase 3). Misma queryKey que link-account.jsx, así que
+  // desvincular desde cualquiera de las dos pantallas refresca la otra sola.
+  const linkQuery = useQuery({
+    queryKey: ['myAccountLink'],
+    queryFn: () => container.accountLinkRepository.getMyLink(),
+  });
+
+  const unlinkMutation = useMutation({
+    mutationFn: (linkId) => container.accountLinkRepository.unlink(linkId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['myAccountLink'] }),
+    onError: (error) => setErrorMessage(error.message ?? 'No se pudo desvincular la cuenta.'),
   });
 
   // Cuántas unidades de cada bebida (agrupadas por catalogItemId) llevas ya
@@ -247,6 +265,20 @@ export default function TabScreen() {
         </AppButton>
       </View>
 
+      {linkQuery.data ? (
+        <View style={[styles.linkedBanner, { backgroundColor: theme.colors.primaryContainer }]}>
+          <MaterialCommunityIcons name="link-variant" size={16} color={theme.colors.onPrimaryContainer} />
+          <Text style={[styles.linkedBannerText, { color: theme.colors.onPrimaryContainer }]} numberOfLines={1}>
+            Vinculada con {linkQuery.data.partnerFirstName}
+          </Text>
+          <Pressable onPress={() => unlinkMutation.mutate(linkQuery.data.linkId)} disabled={unlinkMutation.isPending} hitSlop={8}>
+            <Text style={[styles.unlinkText, { color: theme.colors.onPrimaryContainer }]}>
+              {unlinkMutation.isPending ? 'Desvinculando…' : 'Desvincular'}
+            </Text>
+          </Pressable>
+        </View>
+      ) : null}
+
       {isLoading ? (
         <ActivityIndicator style={styles.spinner} />
       ) : (
@@ -329,6 +361,25 @@ const styles = StyleSheet.create({
   missingPricesWarning: {
     fontSize: 15,
     marginTop: 2,
+  },
+  linkedBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+  },
+  linkedBannerText: {
+    flex: 1,
+    fontSize: 13,
+  },
+  unlinkText: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    textDecorationLine: 'underline',
   },
   spinner: {
     marginTop: 24,
