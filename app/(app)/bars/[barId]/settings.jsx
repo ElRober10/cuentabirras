@@ -113,7 +113,7 @@ export default function BarSettingsScreen() {
                   style={styles.icon}
                   resizeMode="contain"
                 />
-                <Text variant="titleMedium" style={styles.name} numberOfLines={1}>
+                <Text variant="titleMedium" style={styles.name}>
                   {row.name}
                 </Text>
                 {priceCents == null ? (

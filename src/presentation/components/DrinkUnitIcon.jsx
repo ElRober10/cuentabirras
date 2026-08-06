@@ -59,9 +59,15 @@ export function DrinkUnitIcon({ timestamp, size, renderIcon }) {
           style={[styles.face, styles.timeFace, size, backStyle, { backgroundColor: theme.colors.primaryContainer }]}
         >
           <Text style={[styles.timeText, { color: theme.colors.onPrimaryContainer }]}>{hours}</Text>
-          {/* Una rayita entre horas y minutos — sin ella, dos números uno
-              debajo del otro no se leen a simple vista como una hora. */}
-          <View style={[styles.timeDivider, { backgroundColor: theme.colors.onPrimaryContainer }]} />
+          {/* Dos puntitos entre horas y minutos, como los ":" de un reloj —
+              sin ellos, dos números uno debajo del otro no se leen a simple
+              vista como una hora. Dos puntos propios (no el carácter ":")
+              para que se vean igual de redondos pase lo que pase con la
+              fuente. */}
+          <View style={styles.timeDivider}>
+            <View style={[styles.timeDividerDot, { backgroundColor: theme.colors.onPrimaryContainer }]} />
+            <View style={[styles.timeDividerDot, { backgroundColor: theme.colors.onPrimaryContainer }]} />
+          </View>
           <Text style={[styles.timeText, { color: theme.colors.onPrimaryContainer }]}>{minutes}</Text>
         </Animated.View>
       ) : null}
@@ -91,10 +97,14 @@ const styles = StyleSheet.create({
     lineHeight: 15,
   },
   timeDivider: {
-    width: 10,
-    height: 2,
-    borderRadius: 1,
-    marginVertical: 3,
-    opacity: 0.6,
+    flexDirection: 'row',
+    gap: 3,
+    marginVertical: 2,
+  },
+  timeDividerDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    opacity: 0.7,
   },
 });
