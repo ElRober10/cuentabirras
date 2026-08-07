@@ -1,13 +1,14 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet } from 'react-native';
-import { HelperText, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
+import { Linking, StyleSheet, View } from 'react-native';
+import { Checkbox, HelperText, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
 
-import { editProfileSchema } from '../../../src/application/auth/editProfileSchema';
+import { createEditProfileSchema } from '../../../src/application/auth/editProfileSchema';
 import { AppButton } from '../../../src/presentation/components/AppButton';
 import { KeyboardAwareScreen } from '../../../src/presentation/components/KeyboardAwareScreen';
 import { useAuth } from '../../../src/presentation/hooks/useAuth';
+import { LEGAL_LINKS } from '../../../src/shared/constants/legalLinks';
 
 // Pantalla "Editar datos personales": mismos campos que el registro
 // (nombre, apellidos, email, teléfono, contraseña), pero para modificarlos
@@ -25,6 +26,10 @@ export default function EditProfileScreen() {
   const [saved, setSaved] = useState(false);
   const [emailChangePending, setEmailChangePending] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  // Cuentas creadas con Google nunca pasan por la casilla de términos del
+  // registro normal — mientras no la acepten, esta pantalla también la
+  // exige (createEditProfileSchema recibe este booleano justamente por eso).
+  const requireTerms = !user?.termsAcceptedAt;
 
   const {
     control,
@@ -32,7 +37,7 @@ export default function EditProfileScreen() {
     reset,
     formState: { errors, isSubmitting },
   } = useForm({
-    resolver: zodResolver(editProfileSchema),
+    resolver: zodResolver(useMemo(() => createEditProfileSchema(requireTerms), [requireTerms])),
     defaultValues: {
       firstName: user?.firstName ?? '',
       lastName: user?.lastName ?? '',
@@ -40,6 +45,7 @@ export default function EditProfileScreen() {
       phone: user?.phone ?? '',
       newPassword: '',
       confirmNewPassword: '',
+      termsAccepted: !requireTerms,
     },
   });
 
@@ -47,8 +53,14 @@ export default function EditProfileScreen() {
     setServerError(null);
     setSaved(false);
     try {
-      if (values.firstName !== user.firstName || values.lastName !== user.lastName || (values.phone || null) !== (user.phone || null)) {
-        await updateProfile({ firstName: values.firstName, lastName: values.lastName, phone: values.phone || null });
+      const acceptTerms = requireTerms && values.termsAccepted;
+      if (
+        values.firstName !== user.firstName ||
+        values.lastName !== user.lastName ||
+        (values.phone || null) !== (user.phone || null) ||
+        acceptTerms
+      ) {
+        await updateProfile({ firstName: values.firstName, lastName: values.lastName, phone: values.phone || null, acceptTerms });
       }
 
       if (values.email !== user.email) {
@@ -148,6 +160,33 @@ export default function EditProfileScreen() {
         )}
       />
 
+      {requireTerms ? (
+        <>
+          <Controller
+            control={control}
+            name="termsAccepted"
+            render={({ field }) => (
+              <View style={styles.termsRow}>
+                <Checkbox status={field.value ? 'checked' : 'unchecked'} onPress={() => field.onChange(!field.value)} />
+                <Text style={styles.termsText} onPress={() => field.onChange(!field.value)}>
+                  He leído y acepto los{' '}
+                  <Text style={styles.termsLink} onPress={() => Linking.openURL(LEGAL_LINKS.terms)}>
+                    términos y condiciones
+                  </Text>{' '}
+                  y la{' '}
+                  <Text style={styles.termsLink} onPress={() => Linking.openURL(LEGAL_LINKS.privacy)}>
+                    política de privacidad
+                  </Text>
+                </Text>
+              </View>
+            )}
+          />
+          <HelperText type="error" visible={!!errors.termsAccepted}>
+            {errors.termsAccepted?.message}
+          </HelperText>
+        </>
+      ) : null}
+
       <Text variant="titleMedium" style={styles.sectionTitle}>
         Cambiar contraseña
       </Text>
@@ -227,5 +266,17 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 24,
+  },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+  },
+  termsText: {
+    flex: 1,
+  },
+  termsLink: {
+    textDecorationLine: 'underline',
+    fontWeight: 'bold',
   },
 });

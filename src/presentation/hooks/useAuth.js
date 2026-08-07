@@ -55,6 +55,12 @@ export function useAuth() {
     [setUser],
   );
 
+  const loginWithGoogle = useCallback(async () => {
+    const nextUser = await container.authRepository.signInWithGoogle();
+    setUser(nextUser);
+    return nextUser;
+  }, [setUser]);
+
   const logout = useCallback(async () => {
     await container.authRepository.signOut();
     clearUser();
@@ -99,6 +105,7 @@ export function useAuth() {
     isLoading,
     register,
     login,
+    loginWithGoogle,
     logout,
     requestPasswordReset,
     establishRecoverySession,

@@ -5,4 +5,9 @@
 export const LEGAL_LINKS = {
   terms: 'https://elrober10.github.io/cuentabirras/terminos.html',
   privacy: 'https://elrober10.github.io/cuentabirras/privacidad.html',
+  // A donde manda Supabase el enlace de confirmación del email de registro
+  // (ver signUpWithPassword en SupabaseAuthRepository.js) — sin esto,
+  // Supabase usa la "Site URL" por defecto del proyecto, que no apunta a
+  // ninguna página real.
+  emailConfirmed: 'https://elrober10.github.io/cuentabirras/confirmado.html',
 };

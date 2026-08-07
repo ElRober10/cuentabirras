@@ -15,13 +15,14 @@ import { useAuth } from '../../src/presentation/hooks/useAuth';
 // el formulario (qué hay escrito, qué campos tienen error) y "zod" (a
 // través de loginSchema) para validar antes de enviar.
 export default function LoginScreen() {
-  const { login } = useAuth();
+  const { login, loginWithGoogle } = useAuth();
   // serverError: para errores que vienen de Supabase (p. ej. "contraseña
   // incorrecta"), distintos de los errores de validación de zod (que
   // gestiona react-hook-form en `errors`).
   const [serverError, setServerError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [biometricSupported, setBiometricSupported] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   // Por defecto activado si el móvil lo soporta: como todo este interruptor
   // existe para "entrar rápido la próxima vez", lo más cómodo es que venga
   // ya marcado y el usuario lo desmarque si no lo quiere.
@@ -57,6 +58,23 @@ export default function LoginScreen() {
       router.replace('/(app)'); // navega a la pantalla principal, sin dejar "volver" al login
     } catch (error) {
       setServerError(error.message);
+    }
+  };
+
+  // Google nunca da teléfono, y nunca pasa por la casilla de términos del
+  // registro normal — si a la vuelta el perfil todavía no tiene términos
+  // aceptados (recién creado, o de una vez anterior que se saltó ese paso),
+  // mandamos a completarlo en vez de entrar directo a la app.
+  const handleGoogleLogin = async () => {
+    setServerError(null);
+    setIsGoogleLoading(true);
+    try {
+      const user = await loginWithGoogle();
+      router.replace(user.termsAcceptedAt ? '/(app)' : '/settings/edit-profile');
+    } catch (error) {
+      setServerError(error.message);
+    } finally {
+      setIsGoogleLoading(false);
     }
   };
 
@@ -147,8 +165,26 @@ export default function LoginScreen() {
           bien, llama a nuestro onSubmit con los valores ya validados.
           `loading={isSubmitting}` muestra un pequeño spinner en el botón
           mientras se está procesando el login. */}
-      <AppButton mode="contained" onPress={handleSubmit(onSubmit)} loading={isSubmitting} style={styles.button}>
+      <AppButton
+        mode="contained"
+        onPress={handleSubmit(onSubmit)}
+        loading={isSubmitting}
+        disabled={isGoogleLoading}
+        style={styles.button}
+      >
         Entrar
+      </AppButton>
+
+      <Text style={styles.separator}>o</Text>
+
+      <AppButton
+        mode="outlined"
+        icon="google"
+        onPress={handleGoogleLogin}
+        loading={isGoogleLoading}
+        disabled={isSubmitting}
+      >
+        Continuar con Google
       </AppButton>
 
       {/* <Link asChild><AppButton>...</AppButton></Link>: expo-router "inyecta"
@@ -187,6 +223,11 @@ const styles = StyleSheet.create({
   },
   button: {
     marginTop: 16,
+  },
+  separator: {
+    textAlign: 'center',
+    marginTop: 16,
+    marginBottom: 4,
   },
   link: {
     marginTop: 16,

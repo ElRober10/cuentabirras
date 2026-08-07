@@ -1,5 +1,7 @@
 import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 
+import { LEGAL_LINKS } from '../../../shared/constants/legalLinks';
 import { supabase } from '../client';
 
 // auth.users (la tabla interna de Supabase con email/contraseña) no tiene
@@ -12,7 +14,7 @@ import { supabase } from '../client';
 async function fetchProfile(userId) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, email, phone, username, avatar_url, is_admin')
+    .select('id, first_name, last_name, email, phone, username, avatar_url, is_admin, terms_accepted_at')
     .eq('id', userId)
     .single();
 
@@ -27,6 +29,7 @@ async function fetchProfile(userId) {
     username: data.username,
     avatarUrl: data.avatar_url,
     isAdmin: data.is_admin,
+    termsAcceptedAt: data.terms_accepted_at,
   };
 }
 
@@ -51,6 +54,10 @@ export const supabaseAuthRepository = {
           phone: phone || null,
           terms_accepted: !!termsAccepted,
         },
+        // Sin esto, el enlace de "confirma tu email" manda a la "Site URL"
+        // por defecto del proyecto de Supabase, que no apunta a ninguna
+        // página real — de ahí el "esto no existe" que se veía antes.
+        emailRedirectTo: LEGAL_LINKS.emailConfirmed,
       },
     });
     if (error) throw error;
@@ -71,9 +78,49 @@ export const supabaseAuthRepository = {
     return fetchProfile(data.user.id);
   },
 
-  // Placeholder: se implementará en la Fase 2 del plan (login con Google).
+  // Se llama desde la pantalla de login. En vez del SDK nativo de Google
+  // (que exige un módulo nativo propio y complica el build), usamos el
+  // flujo OAuth que ya trae Supabase: abre un navegador seguro con Google,
+  // y Google devuelve a Supabase, que a su vez redirige aquí — a nuestro
+  // propio esquema `cuentabirras://`, el mismo patrón que ya usa
+  // requestPasswordReset. Todo esto pasa configurando el proveedor Google en
+  // el panel de Supabase (Authentication → Providers), no aquí.
   async signInWithGoogle() {
-    throw new Error('Login con Google todavía no implementado (Fase 2 del plan).');
+    const redirectTo = Linking.createURL('auth/callback');
+
+    // skipBrowserRedirect: sin esto, el propio supabase-js intentaría
+    // redirigir la pestaña actual (comportamiento pensado para web) — en
+    // React Native no hay "pestaña actual", así que le pedimos solo la URL
+    // y abrimos NOSOTROS el navegador con expo-web-browser.
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo, skipBrowserRedirect: true },
+    });
+    if (error) throw error;
+
+    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
+    if (result.type !== 'success') {
+      throw new Error('Inicio de sesión con Google cancelado.');
+    }
+
+    // Supabase manda los tokens en el FRAGMENTO de la URL de vuelta
+    // (después del #, no del ?) — por eso no vale con
+    // Linking.parse()/searchParams normales, hay que partir la URL a mano.
+    const fragment = result.url.split('#')[1] ?? '';
+    const params = new URLSearchParams(fragment);
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+    if (!accessToken || !refreshToken) {
+      throw new Error('No se pudo completar el inicio de sesión con Google.');
+    }
+
+    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    if (sessionError) throw sessionError;
+
+    return fetchProfile(sessionData.session.user.id);
   },
 
   async signOut() {
@@ -168,14 +215,17 @@ export const supabaseAuthRepository = {
   // Se llama desde app/(app)/settings/edit-profile.jsx. Nombre/apellidos/
   // teléfono viven solo en profiles (no en auth.users), así que esto es un
   // update directo, igual que updatePushToken — sin RPC, profiles_update_own
-  // ya basta.
-  async updateProfile({ firstName, lastName, phone }) {
+  // ya basta. `acceptTerms` solo se manda en true cuando la pantalla exige
+  // aceptarlos (cuenta creada por Google, que no pasa por el registro
+  // normal) — nunca se manda en false, así nunca "desacepta" nada ya aceptado.
+  async updateProfile({ firstName, lastName, phone, acceptTerms }) {
     const { data: session } = await supabase.auth.getSession();
     const userId = session.session.user.id;
-    const { error } = await supabase
-      .from('profiles')
-      .update({ first_name: firstName, last_name: lastName, phone: phone || null })
-      .eq('id', userId);
+    const updates = { first_name: firstName, last_name: lastName, phone: phone || null };
+    if (acceptTerms) {
+      updates.terms_accepted_at = new Date().toISOString();
+    }
+    const { error } = await supabase.from('profiles').update(updates).eq('id', userId);
     if (error) {
       // 23505 = unique_violation. El mensaje de Postgres de serie ("duplicate
       // key value violates unique constraint...") no dice nada a un usuario

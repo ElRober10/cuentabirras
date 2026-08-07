@@ -14,6 +14,7 @@
  * @property {string|null} username
  * @property {string|null} avatarUrl
  * @property {boolean} isAdmin - Solo true para la cuenta de super admin (ver migración 0023); da acceso al panel de administración.
+ * @property {string|null} termsAcceptedAt - Cuándo aceptó los términos y la política de privacidad; null en cuentas creadas con Google que todavía no han pasado por "Editar datos personales" para aceptarlos (ver migración 0029 y 0030).
  */
 
 // Este archivo no tiene ninguna función ni variable real que usar en otro
