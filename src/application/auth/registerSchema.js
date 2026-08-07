@@ -25,6 +25,12 @@ export const registerSchema = z
     phone: z.string().trim().optional(),
     password: z.string().min(8, 'Mínimo 8 caracteres'),
     confirmPassword: z.string().min(1, 'Obligatorio'),
+    // Checkbox de "acepto los términos" — Play Store exige que quede
+    // constancia de esta aceptación antes de crear la cuenta (ver
+    // migración 0029_terms_accepted.sql).
+    termsAccepted: z.boolean().refine((value) => value === true, {
+      message: 'Tienes que aceptar los términos y la política de privacidad',
+    }),
   })
   // .refine(...) añade una regla que depende de VARIOS campos a la vez (aquí,
   // que password y confirmPassword sean iguales). "path" le dice a

@@ -2,13 +2,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet } from 'react-native';
-import { HelperText, Text, TextInput } from 'react-native-paper';
+import { Linking, StyleSheet, View } from 'react-native';
+import { Checkbox, HelperText, Text, TextInput } from 'react-native-paper';
 
 import { registerSchema } from '../../src/application/auth/registerSchema';
 import { AppButton } from '../../src/presentation/components/AppButton';
 import { KeyboardAwareScreen } from '../../src/presentation/components/KeyboardAwareScreen';
 import { useAuth } from '../../src/presentation/hooks/useAuth';
+import { LEGAL_LINKS } from '../../src/shared/constants/legalLinks';
 
 // Pantalla de la ruta "/(auth)/register". Mismo patrón que login.jsx
 // (Controller + react-hook-form + zod) — mira los comentarios de ese
@@ -29,7 +30,15 @@ export default function RegisterScreen() {
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(registerSchema),
-    defaultValues: { firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' },
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      password: '',
+      confirmPassword: '',
+      termsAccepted: false,
+    },
   });
 
   // `{ confirmPassword: _confirmPassword, ...values }`: sacamos
@@ -202,6 +211,33 @@ export default function RegisterScreen() {
         {errors.confirmPassword?.message}
       </HelperText>
 
+      <Controller
+        control={control}
+        name="termsAccepted"
+        render={({ field }) => (
+          <View style={styles.termsRow}>
+            <Checkbox status={field.value ? 'checked' : 'unchecked'} onPress={() => field.onChange(!field.value)} />
+            {/* Text anidado dentro de Text: cada trozo puede tener su
+                propio onPress, así que "términos" y "política de
+                privacidad" abren cada uno su propio enlace, sin que el
+                resto de la frase sea tocable. */}
+            <Text style={styles.termsText} onPress={() => field.onChange(!field.value)}>
+              He leído y acepto los{' '}
+              <Text style={styles.termsLink} onPress={() => Linking.openURL(LEGAL_LINKS.terms)}>
+                términos y condiciones
+              </Text>{' '}
+              y la{' '}
+              <Text style={styles.termsLink} onPress={() => Linking.openURL(LEGAL_LINKS.privacy)}>
+                política de privacidad
+              </Text>
+            </Text>
+          </View>
+        )}
+      />
+      <HelperText type="error" visible={!!errors.termsAccepted}>
+        {errors.termsAccepted?.message}
+      </HelperText>
+
       {serverError ? (
         <HelperText type="error" visible>
           {serverError}
@@ -234,5 +270,17 @@ const styles = StyleSheet.create({
   link: {
     marginTop: 16,
     alignSelf: 'center',
+  },
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  termsText: {
+    flex: 1,
+  },
+  termsLink: {
+    textDecorationLine: 'underline',
+    fontWeight: 'bold',
   },
 });

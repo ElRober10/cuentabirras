@@ -76,6 +76,23 @@ export function useAuth() {
     await container.authRepository.updatePassword(newPassword);
   }, []);
 
+  // Se usa desde settings/edit-profile.jsx. A diferencia de login/register,
+  // aquí sí hace falta actualizar el store a mano con setUser: no hay ningún
+  // evento de auth de por medio (nombre/apellidos/teléfono no tocan
+  // auth.users), así que onAuthStateChange nunca se entera solo.
+  const updateProfile = useCallback(
+    async (params) => {
+      const nextUser = await container.authRepository.updateProfile(params);
+      setUser(nextUser);
+      return nextUser;
+    },
+    [setUser],
+  );
+
+  const updateEmail = useCallback(async (newEmail) => {
+    await container.authRepository.updateEmail(newEmail);
+  }, []);
+
   // Esto es lo que reciben las pantallas al hacer useAuth().
   return {
     user,
@@ -86,5 +103,7 @@ export function useAuth() {
     requestPasswordReset,
     establishRecoverySession,
     updatePassword,
+    updateProfile,
+    updateEmail,
   };
 }

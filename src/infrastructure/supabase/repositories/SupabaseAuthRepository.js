@@ -12,7 +12,7 @@ import { supabase } from '../client';
 async function fetchProfile(userId) {
   const { data, error } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name, email, phone, username, avatar_url')
+    .select('id, first_name, last_name, email, phone, username, avatar_url, is_admin')
     .eq('id', userId)
     .single();
 
@@ -26,6 +26,7 @@ async function fetchProfile(userId) {
     phone: data.phone,
     username: data.username,
     avatarUrl: data.avatar_url,
+    isAdmin: data.is_admin,
   };
 }
 
@@ -35,7 +36,7 @@ async function fetchProfile(userId) {
 /** @type {import('../../../domain/repositories/IAuthRepository').IAuthRepository} */
 export const supabaseAuthRepository = {
   // Se llama desde la pantalla de registro (app/(auth)/register.jsx).
-  async signUpWithPassword({ email, password, firstName, lastName, phone }) {
+  async signUpWithPassword({ email, password, firstName, lastName, phone, termsAccepted }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -48,6 +49,7 @@ export const supabaseAuthRepository = {
           first_name: firstName,
           last_name: lastName,
           phone: phone || null,
+          terms_accepted: !!termsAccepted,
         },
       },
     });
@@ -160,6 +162,43 @@ export const supabaseAuthRepository = {
       .from('profiles')
       .update({ push_token: token })
       .eq('id', data.session.user.id);
+    if (error) throw error;
+  },
+
+  // Se llama desde app/(app)/settings/edit-profile.jsx. Nombre/apellidos/
+  // teléfono viven solo en profiles (no en auth.users), así que esto es un
+  // update directo, igual que updatePushToken — sin RPC, profiles_update_own
+  // ya basta.
+  async updateProfile({ firstName, lastName, phone }) {
+    const { data: session } = await supabase.auth.getSession();
+    const userId = session.session.user.id;
+    const { error } = await supabase
+      .from('profiles')
+      .update({ first_name: firstName, last_name: lastName, phone: phone || null })
+      .eq('id', userId);
+    if (error) {
+      // 23505 = unique_violation. El mensaje de Postgres de serie ("duplicate
+      // key value violates unique constraint...") no dice nada a un usuario
+      // normal — el único campo único que se toca aquí es el teléfono.
+      if (error.code === '23505') {
+        throw new Error('Ese teléfono ya lo usa otra cuenta.');
+      }
+      throw error;
+    }
+    return fetchProfile(userId);
+  },
+
+  // Cambiar el email de ACCESO no es un simple update: Supabase exige
+  // confirmarlo desde un enlace mandado a la dirección nueva (para que nadie
+  // pueda robarte la cuenta solo con tener la sesión abierta un momento) —
+  // auth.users.email no cambia hasta que se confirma ese enlace, y
+  // profiles.email se sincroniza solo cuando eso pasa (trigger, migración
+  // 0028). emailRedirectTo apunta a la propia app (mismo scheme que ya usa
+  // reset-password) para que, si se abre el enlace desde el móvil, vuelva
+  // aquí en vez de a una página web genérica.
+  async updateEmail(newEmail) {
+    const redirectTo = Linking.createURL('/');
+    const { error } = await supabase.auth.updateUser({ email: newEmail }, { emailRedirectTo: redirectTo });
     if (error) throw error;
   },
 };

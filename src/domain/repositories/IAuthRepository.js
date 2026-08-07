@@ -14,7 +14,7 @@
 // src/infrastructure/supabase/repositories/SupabaseAuthRepository.js
 /**
  * @typedef {Object} IAuthRepository
- * @property {(params: {email: string, password: string, firstName: string, lastName: string, phone?: string}) => Promise<{needsEmailConfirmation: boolean, user: UserProfile|null}>} signUpWithPassword
+ * @property {(params: {email: string, password: string, firstName: string, lastName: string, phone?: string, termsAccepted: boolean}) => Promise<{needsEmailConfirmation: boolean, user: UserProfile|null}>} signUpWithPassword
  * @property {(params: {email: string, password: string}) => Promise<UserProfile>} signInWithPassword
  * @property {() => Promise<UserProfile>} signInWithGoogle - de momento lanza un error, se implementa en la Fase 2
  * @property {() => Promise<void>} signOut
@@ -24,6 +24,8 @@
  * @property {(params: {accessToken?: string, refreshToken?: string, code?: string}) => Promise<void>} establishRecoverySession - crea una sesión temporal a partir de los tokens/código que trae el enlace de recuperación, necesaria antes de poder llamar a updatePassword.
  * @property {(newPassword: string) => Promise<void>} updatePassword - cambia la contraseña del usuario ya autenticado (sesión normal, o la sesión temporal de establishRecoverySession).
  * @property {(token: string) => Promise<void>} updatePushToken - guarda el token de notificaciones push de Expo de este dispositivo en profiles.push_token (Fase D2), para que se le puedan mandar avisos.
+ * @property {(params: {firstName: string, lastName: string, phone: string|null}) => Promise<UserProfile>} updateProfile - Edita nombre/apellidos/teléfono (pantalla "Editar datos personales"). Update directo sobre profiles, no toca auth.users ni el email — eso es cosa de updateEmail.
+ * @property {(newEmail: string) => Promise<void>} updateEmail - Pide a Supabase el cambio de email de ACCESO. Ojo: no cambia nada al momento — Supabase manda un enlace de confirmación a la dirección nueva, y hasta que no se confirma, sigues entrando con la actual. profiles.email se sincroniza solo, vía trigger (migración 0028), en cuanto se confirma.
  */
 
 export {};

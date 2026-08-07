@@ -205,8 +205,10 @@ export default function AppLayout() {
         <Stack.Screen name="bars/[barId]/edit" options={{ headerShown: true, title: 'Editar bar' }} />
         <Stack.Screen name="bars/[barId]/settings" options={{ headerShown: true, title: 'Precios del bar' }} />
         <Stack.Screen name="settings/index" options={{ headerShown: true, title: 'Ajustes' }} />
+        <Stack.Screen name="settings/edit-profile" options={{ headerShown: true, title: 'Editar datos personales' }} />
         <Stack.Screen name="settings/link-account" options={{ headerShown: true, title: 'Vincular cuenta' }} />
         <Stack.Screen name="settings/history" options={{ headerShown: true, title: 'Histórico de cuentas' }} />
+        <Stack.Screen name="settings/admin" options={{ headerShown: true, title: 'Panel de administración' }} />
       </Stack>
 
       <PendingLinkInvitationDialog
