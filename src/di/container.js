@@ -1,6 +1,7 @@
 import { expoContactsRepository } from '../infrastructure/expo/repositories/ExpoContactsRepository';
 import { expoPushNotificationRepository } from '../infrastructure/expo/repositories/ExpoPushNotificationRepository';
 import { supabaseAccountLinkRepository } from '../infrastructure/supabase/repositories/SupabaseAccountLinkRepository';
+import { supabaseAdminRepository } from '../infrastructure/supabase/repositories/SupabaseAdminRepository';
 import { supabaseAuthRepository } from '../infrastructure/supabase/repositories/SupabaseAuthRepository';
 import { supabaseBarPhotoRepository } from '../infrastructure/supabase/repositories/SupabaseBarPhotoRepository';
 import { supabaseBarRepository } from '../infrastructure/supabase/repositories/SupabaseBarRepository';
@@ -23,6 +24,7 @@ import { supabaseTabRepository } from '../infrastructure/supabase/repositories/S
 // casos de uso de application/bars/ y application/tabs/, y las pantallas de bares.
 export const container = {
   accountLinkRepository: supabaseAccountLinkRepository,
+  adminRepository: supabaseAdminRepository,
   authRepository: supabaseAuthRepository,
   contactsRepository: expoContactsRepository,
   pushNotificationRepository: expoPushNotificationRepository,

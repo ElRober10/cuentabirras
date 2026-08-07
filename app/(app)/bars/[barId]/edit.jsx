@@ -8,16 +8,23 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Dialog, HelperText, Portal, Text, useTheme } from 'react-native-paper';
 
 import { container } from '../../../../src/di/container';
+import { useAuth } from '../../../../src/presentation/hooks/useAuth';
 import { BAR_PLACEHOLDER_PHOTOS } from '../../../../src/shared/constants/barPlaceholderPhotos';
 
-// Menú de edición de un bar: dos opciones, "Cambiar foto" (abre el mismo
-// menú de siempre: cámara / galería / foto por defecto) y "Editar precios"
-// (navega a la lista completa del catálogo, ver settings.jsx).
+// Menú de edición de un bar: "Cambiar foto" (la tuya, personal — abre el
+// menú de siempre: cámara / galería / foto por defecto), "Editar precios"
+// (navega a la lista completa del catálogo, ver settings.jsx) y, solo si
+// eres admin, "Cambiar foto oficial" — la que ve todo el mundo que no se
+// haya puesto la suya propia. Las dos opciones de foto reutilizan el MISMO
+// diálogo; `photoTarget` decide a qué repositorio (personal u oficial) va
+// la subida.
 export default function BarEditScreen() {
   const { barId, name } = useLocalSearchParams();
   const theme = useTheme();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [photoMenuVisible, setPhotoMenuVisible] = useState(false);
+  const [photoTarget, setPhotoTarget] = useState('personal');
   // Dentro del mismo diálogo: false = menú de opciones, true = la rejilla
   // con las 10 fotos genéricas para elegir una.
   const [showDefaultPhotos, setShowDefaultPhotos] = useState(false);
@@ -30,14 +37,17 @@ export default function BarEditScreen() {
     setPhotoError(null);
     setIsUploadingPhoto(true);
     try {
-      await container.barPhotoRepository.setPhoto({
+      const setPhoto =
+        photoTarget === 'official' ? container.barPhotoRepository.setOfficialPhoto : container.barPhotoRepository.setPhoto;
+      await setPhoto({
         barId,
         localFileUri: asset.uri,
         mimeType: asset.mimeType,
       });
       // La lista de bares (debajo, en la pila de navegación) tiene esta
       // misma query cacheada — al invalidarla aquí, se refresca sola en
-      // cuanto volvamos a verla.
+      // cuanto volvamos a verla. Sirve para las dos (personal y oficial):
+      // getSignedUrlForBar ya resuelve cuál enseñar.
       queryClient.invalidateQueries({ queryKey: ['barPhotoUrl', barId] });
       setPhotoMenuVisible(false);
       setShowDefaultPhotos(false);
@@ -98,7 +108,8 @@ export default function BarEditScreen() {
     await uploadPhoto({ uri: asset.localUri ?? asset.uri, mimeType: 'image/jpeg' });
   };
 
-  const openPhotoMenu = () => {
+  const openPhotoMenu = (target) => {
+    setPhotoTarget(target);
     setPhotoError(null);
     setShowDefaultPhotos(false);
     setPhotoMenuVisible(true);
@@ -106,7 +117,7 @@ export default function BarEditScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <Pressable onPress={openPhotoMenu} style={[styles.option, { borderColor: theme.colors.outlineVariant }]}>
+      <Pressable onPress={() => openPhotoMenu('personal')} style={[styles.option, { borderColor: theme.colors.outlineVariant }]}>
         <MaterialCommunityIcons name="camera-outline" size={26} color={theme.colors.primary} />
         <View style={styles.optionText}>
           <Text variant="titleMedium">Cambiar foto</Text>
@@ -125,9 +136,30 @@ export default function BarEditScreen() {
         </View>
       </Pressable>
 
+      {/* Igual que en Ajustes: la protección real está en la RLS de
+          bar_official_photos y del bucket de Storage (solo admin puede
+          escribir) — esto solo evita que alguien que no es admin vea la
+          opción. */}
+      {user?.isAdmin ? (
+        <Pressable
+          onPress={() => openPhotoMenu('official')}
+          style={[styles.option, { borderColor: theme.colors.outlineVariant }]}
+        >
+          <MaterialCommunityIcons name="shield-crown-outline" size={26} color={theme.colors.primary} />
+          <View style={styles.optionText}>
+            <Text variant="titleMedium">Cambiar foto oficial</Text>
+            <Text style={{ color: theme.colors.onSurfaceVariant }}>
+              La ve todo el mundo que no se haya puesto su propia foto
+            </Text>
+          </View>
+        </Pressable>
+      ) : null}
+
       <Portal>
         <Dialog visible={photoMenuVisible} onDismiss={() => setPhotoMenuVisible(false)}>
-          <Dialog.Title>Foto de &quot;{name}&quot;</Dialog.Title>
+          <Dialog.Title>
+            {photoTarget === 'official' ? 'Foto oficial de' : 'Foto de'} &quot;{name}&quot;
+          </Dialog.Title>
           <Dialog.Content>
             {isUploadingPhoto ? (
               <View style={styles.uploadingRow}>

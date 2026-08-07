@@ -96,15 +96,64 @@ export const supabaseBarPhotoRepository = {
   },
 
   async getSignedUrlForBar(barId) {
+    // Tu foto personal manda si la tienes; si no, se cae a la oficial (la
+    // que haya puesto el admin, si es que hay alguna) — así, quien no se ha
+    // molestado en poner su propia foto, al menos ve la de referencia del
+    // bar en vez del icono genérico de siempre.
     const photo = await this.getForBar(barId);
-    if (!photo) return null;
+    const photoPath = photo?.photoPath ?? (await this.getOfficialForBar(barId))?.photoPath;
+    if (!photoPath) return null;
 
     // El bucket es privado, así que no existe una URL pública fija para la
     // imagen: createSignedUrl genera una URL temporal (aquí, válida 1 hora)
     // que sí se puede usar directamente en un <Image source={{ uri }} />.
-    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(photo.photoPath, 3600);
+    const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(photoPath, 3600);
     if (error) throw error;
     return data.signedUrl;
+  },
+
+  // --- Foto OFICIAL (solo admin, ver migración 0024) ---
+
+  async getOfficialForBar(barId) {
+    const { data, error } = await supabase.from('bar_official_photos').select('*').eq('bar_id', barId).maybeSingle();
+    if (error) throw error;
+    return data
+      ? { barId: data.bar_id, photoPath: data.photo_path, setBy: data.set_by, updatedAt: data.updated_at }
+      : null;
+  },
+
+  async setOfficialPhoto({ barId, localFileUri, mimeType = 'image/jpeg' }) {
+    const userId = await getCurrentUserId();
+    const previousPhoto = await this.getOfficialForBar(barId);
+
+    // Carpeta fija "official/" (no la del usuario) — coincide con la
+    // política de Storage de la migración 0024.
+    const path = `official/${barId}.${extensionForMimeType(mimeType)}`;
+
+    const base64 = await FileSystem.readAsStringAsync(localFileUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const arrayBuffer = base64ToArrayBuffer(base64);
+
+    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, arrayBuffer, {
+      contentType: mimeType,
+      upsert: true,
+    });
+    if (uploadError) throw uploadError;
+
+    const { data, error } = await supabase
+      .from('bar_official_photos')
+      .upsert({ bar_id: barId, photo_path: path, set_by: userId, updated_at: new Date().toISOString() }, { onConflict: 'bar_id' })
+      .select()
+      .single();
+    if (error) throw error;
+
+    if (previousPhoto && previousPhoto.photoPath !== path) {
+      const { error: cleanupError } = await supabase.storage.from(BUCKET).remove([previousPhoto.photoPath]);
+      if (cleanupError) console.warn('No se pudo borrar la foto oficial anterior:', cleanupError);
+    }
+
+    return { barId: data.bar_id, photoPath: data.photo_path, setBy: data.set_by, updatedAt: data.updated_at };
   },
 
   // Borra el archivo real del bucket. Supabase bloquea borrar filas de

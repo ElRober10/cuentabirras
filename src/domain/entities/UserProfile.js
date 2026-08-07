@@ -13,6 +13,7 @@
  * @property {string|null} phone - Opcional, puede no existir (null)
  * @property {string|null} username
  * @property {string|null} avatarUrl
+ * @property {boolean} isAdmin - Solo true para la cuenta de super admin (ver migración 0023); da acceso al panel de administración.
  */
 
 // Este archivo no tiene ninguna función ni variable real que usar en otro
