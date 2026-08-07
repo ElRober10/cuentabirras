@@ -8,5 +8,5 @@ export async function startNewTab({ barId, currentOpenTabId }) {
   if (currentOpenTabId) {
     await container.tabRepository.closeTab(currentOpenTabId);
   }
-  return container.tabRepository.createTab(barId);
+  return container.tabRepository.openOrJoinTab(barId);
 }

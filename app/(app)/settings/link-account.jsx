@@ -11,14 +11,22 @@ import { sendLinkInvitationByPhone } from '../../../src/application/invitations/
 import { container } from '../../../src/di/container';
 import { AppButton } from '../../../src/presentation/components/AppButton';
 import { LinkedAccountBanner } from '../../../src/presentation/components/LinkedAccountBanner';
+import { usePendingLinkInvitations } from '../../../src/presentation/hooks/usePendingLinkInvitations';
 
-// Pantalla "Vincular cuenta": tres estados posibles, mutuamente excluyentes
-// (nunca puedes tener a la vez un vínculo activo Y una invitación enviada
-// pendiente — lo impide send_link_invitation en la migración 0019):
+// Pantalla "Vincular cuenta": cuatro estados posibles, mutuamente
+// excluyentes salvo el 2 (nunca puedes tener a la vez un vínculo activo Y
+// una invitación enviada pendiente — lo impide send_link_invitation en la
+// migración 0019 — pero SÍ podrías tener a la vez una enviada por ti y otra
+// recibida de otra persona, por eso la 2 se comprueba primero):
 // 1. Ya vinculado → LinkedAccountBanner + desvincular.
-// 2. Invitación enviada pendiente → tarjeta de estado + cancelar.
-// 3. Ninguno de los dos → elegir un contacto (abre WhatsApp para avisar) o
-//    invitar por email a mano.
+// 2. Invitación RECIBIDA pendiente por responder → tarjeta aceptar/rechazar.
+//    Antes esto solo se veía en el diálogo automático de _layout.jsx, que
+//    solo se comprueba una vez al abrir la app — si no lo pillabas en ese
+//    momento, entrar aquí a mano no mostraba nada. Con esto ya no depende
+//    de haber visto el diálogo a tiempo.
+// 3. Invitación ENVIADA pendiente → tarjeta de estado + cancelar.
+// 4. Ninguno de los anteriores → elegir un contacto (abre WhatsApp para
+//    avisar) o invitar por email a mano.
 export default function LinkAccountScreen() {
   const theme = useTheme();
   const queryClient = useQueryClient();
@@ -26,6 +34,20 @@ export default function LinkAccountScreen() {
   const linkQuery = useQuery({
     queryKey: ['myAccountLink'],
     queryFn: () => container.accountLinkRepository.getMyLink(),
+  });
+
+  const pendingInvitationsQuery = usePendingLinkInvitations(true);
+  const incomingInvitation = pendingInvitationsQuery.data?.[0] ?? null;
+
+  const respondMutation = useMutation({
+    mutationFn: ({ requestId, accept }) => container.accountLinkRepository.respondToInvitation({ requestId, accept }),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['pendingLinkInvitations'] });
+      queryClient.invalidateQueries({ queryKey: ['myAccountLink'] });
+      container.accountLinkRepository.notifyInvitationResponded(variables.requestId).catch((error) => {
+        console.warn('No se pudo enviar el push de respuesta:', error);
+      });
+    },
   });
 
   const sentInvitationQuery = useQuery({
@@ -89,6 +111,39 @@ export default function LinkAccountScreen() {
           onUnlink={() => unlinkMutation.mutate(linkQuery.data.linkId)}
           isUnlinking={unlinkMutation.isPending}
         />
+      ) : incomingInvitation ? (
+        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
+          <View style={[styles.iconBadge, { backgroundColor: theme.colors.primaryContainer }]}>
+            <MaterialCommunityIcons name="link-variant" size={30} color={theme.colors.onPrimaryContainer} />
+          </View>
+          <Text variant="titleLarge" style={styles.centerText}>
+            Invitación recibida
+          </Text>
+          <Text style={[styles.centerText, { color: theme.colors.onSurfaceVariant }]}>
+            {incomingInvitation.senderFirstName} {incomingInvitation.senderLastName} te ha invitado a vincular
+            vuestras cuentas, para compartir gasto entre las dos sin tener que repartir.
+          </Text>
+          <View style={styles.respondRow}>
+            <AppButton
+              mode="outlined"
+              loading={respondMutation.isPending && respondMutation.variables?.accept === false}
+              disabled={respondMutation.isPending}
+              onPress={() => respondMutation.mutate({ requestId: incomingInvitation.requestId, accept: false })}
+              style={styles.respondButton}
+            >
+              Rechazar
+            </AppButton>
+            <AppButton
+              mode="contained"
+              loading={respondMutation.isPending && respondMutation.variables?.accept === true}
+              disabled={respondMutation.isPending}
+              onPress={() => respondMutation.mutate({ requestId: incomingInvitation.requestId, accept: true })}
+              style={styles.respondButton}
+            >
+              Aceptar
+            </AppButton>
+          </View>
+        </View>
       ) : sentInvitationQuery.isLoading ? (
         <ActivityIndicator style={styles.spinner} />
       ) : sentInvitationQuery.data ? (
@@ -255,6 +310,15 @@ const styles = StyleSheet.create({
   stretchButton: {
     marginTop: 20,
     alignSelf: 'stretch',
+  },
+  respondRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 20,
+    alignSelf: 'stretch',
+  },
+  respondButton: {
+    flex: 1,
   },
   // Fila de "Invitar por WhatsApp": mismo patrón que las opciones de
   // bars/[barId]/edit.jsx (icono + texto + chevron, tarjeta con borde).

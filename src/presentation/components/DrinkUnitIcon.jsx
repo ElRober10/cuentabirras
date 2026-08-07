@@ -1,3 +1,4 @@
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -58,6 +59,12 @@ export function DrinkUnitIcon({ timestamp, size, renderIcon }) {
         <Animated.View
           style={[styles.face, styles.timeFace, size, backStyle, { backgroundColor: theme.colors.primaryContainer }]}
         >
+          <MaterialCommunityIcons
+            name="clock-outline"
+            size={12}
+            color={theme.colors.onPrimaryContainer}
+            style={styles.timeIcon}
+          />
           <Text style={[styles.timeText, { color: theme.colors.onPrimaryContainer }]}>{hours}</Text>
           {/* Dos puntitos entre horas y minutos, como los ":" de un reloj —
               sin ellos, dos números uno debajo del otro no se leen a simple
@@ -90,6 +97,9 @@ const styles = StyleSheet.create({
   },
   timeFace: {
     borderRadius: 8,
+  },
+  timeIcon: {
+    marginBottom: 1,
   },
   timeText: {
     fontSize: 13,

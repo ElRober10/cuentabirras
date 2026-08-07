@@ -12,7 +12,7 @@
  *
  * @typedef {Object} ITabRepository
  * @property {(barId: string) => Promise<Tab|null>} findOpenTabForBar - "¿Tengo ya una cuenta abierta en este bar?" (RLS ya filtra por ti, no hace falta pasar tu id) — la pregunta clave para decidir si entrar directo (no hay ninguna) o preguntar "continuar o nueva" (sí la hay).
- * @property {(barId: string) => Promise<Tab>} createTab - Crea una cuenta nueva; el trigger de la base de datos (migración 0003) te añade automáticamente como participante, no hace falta hacerlo a mano desde aquí.
+ * @property {(barId: string) => Promise<Tab>} openOrJoinTab - Crea una cuenta nueva en ese bar — salvo que tengas una pareja vinculada (ver IAccountLinkRepository) que YA tenga una abierta ahí, en cuyo caso te unes a la suya en vez de crear otra (así lo que añada uno lo ve el otro). RPC `open_or_join_tab` (migración 0026), security definer porque unirte a una cuenta ajena requiere insertar en tab_participants, algo que el cliente no puede hacer directamente.
  * @property {(tabId: string) => Promise<void>} closeTab - Marca la cuenta como cerrada (status: 'closed'); a partir de ahí ya no se pueden añadir/editar bebidas.
  * @property {(tabId: string) => Promise<void>} reopenTab - Deshace un cierre: vuelve a dejar la cuenta como abierta. Se usa tanto para "Cancelar cierre" (ticket recién cerrado) como para reabrir una cuenta antigua desde el histórico (ver application/tabs/reopenClosedTab.js, que además comprueba que no haya ya otra abierta en ese bar).
  * @property {() => Promise<Tab[]>} listAllForCurrentUser - Todas tus cuentas, de cualquier bar y en cualquier estado (RLS ya filtra por ti). Se usa para calcular "a qué bares vas más" (número de visitas) al ordenar la lista de bares.

@@ -45,6 +45,11 @@ export default function TabScreen() {
   const tabItemsQuery = useQuery({
     queryKey: ['tabItems', tabId],
     queryFn: () => container.tabItemRepository.listByTab(tabId),
+    // La cuenta puede estar compartida con una pareja vinculada (ver
+    // open_or_join_tab, migración 0026) y todavía no hay ningún canal en
+    // tiempo real en la app — sin este sondeo, lo que añada la otra persona
+    // no aparecería aquí hasta salir y volver a entrar a la pantalla.
+    refetchInterval: 10 * 1000,
   });
 
   // Popularidad por icono en TODA la app (no solo este bar) — ordena el
@@ -291,8 +296,9 @@ export default function TabScreen() {
               catalogItem={row.catalogItem}
               quantity={row.quantity}
               timestamps={timestampsByItem[row.catalogItem.id]}
+              onAddOne={() => handleRequestAdd(row.catalogItem, 1)}
               onRemoveOne={() => removeOneMutation.mutate(row.catalogItem.id)}
-              disabled={removeOneMutation.isPending}
+              disabled={removeOneMutation.isPending || addExistingMutation.isPending}
             />
           )}
           ListEmptyComponent={

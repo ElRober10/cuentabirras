@@ -12,11 +12,6 @@ function mapTab(row) {
   };
 }
 
-async function getCurrentUserId() {
-  const { data } = await supabase.auth.getSession();
-  return data.session.user.id;
-}
-
 /** @type {import('../../../domain/repositories/ITabRepository').ITabRepository} */
 export const supabaseTabRepository = {
   async findOpenTabForBar(barId) {
@@ -32,28 +27,8 @@ export const supabaseTabRepository = {
     return data ? mapTab(data) : null;
   },
 
-  async createTab(barId) {
-    const userId = await getCurrentUserId();
-
-    // OJO con este patrón: NO encadenamos .select() al insert. Si lo
-    // hiciéramos, Postgres tendría que comprobar la política de LECTURA de
-    // `tabs` (que exige ya ser participante) en el mismo instante en que se
-    // inserta la fila — justo antes de que el trigger que te añade como
-    // participante haya terminado de asentarse. Eso es lo que causaba el
-    // error "new row violates row-level security policy". Separando el
-    // insert de la lectura en dos pasos, la segunda consulta ya ve el
-    // resultado del trigger sin problema.
-    const { error: insertError } = await supabase.from('tabs').insert({ bar_id: barId, created_by: userId });
-    if (insertError) throw insertError;
-
-    const { data, error } = await supabase
-      .from('tabs')
-      .select('*')
-      .eq('bar_id', barId)
-      .eq('created_by', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+  async openOrJoinTab(barId) {
+    const { data, error } = await supabase.rpc('open_or_join_tab', { target_bar_id: barId });
     if (error) throw error;
     return mapTab(data);
   },
