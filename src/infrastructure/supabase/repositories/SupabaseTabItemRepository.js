@@ -47,18 +47,19 @@ export const supabaseTabItemRepository = {
   },
 
   // Quita UNA unidad de esa bebida (para corregir un error al añadir) —
-  // siempre la del "montón" que TÚ añadiste más recientemente: si esa fila
-  // tenía más de una unidad, solo baja el número; si tenía una sola, borra
-  // la fila entera. Solo se pueden tocar las filas que añadiste tú mismo
-  // (política de RLS "tab_items_update_own"/"tab_items_delete_own").
+  // siempre la del "montón" más reciente, la haya añadido quien la haya
+  // añadido: en una cuenta compartida entre parejas vinculadas (migración
+  // 0026), cualquiera de los dos puede quitar cualquier unidad, no solo las
+  // suyas — si esta fila tenía más de una unidad, solo baja el número; si
+  // tenía una sola, borra la fila entera (política de RLS
+  // "tab_items_update_participant"/"tab_items_delete_participant",
+  // migración 0031: cualquier participante de la cuenta, no solo quien la añadió).
   async removeOneUnit({ tabId, catalogItemId }) {
-    const userId = await getCurrentUserId();
     const { data, error } = await supabase
       .from('tab_items')
       .select('id, quantity')
       .eq('tab_id', tabId)
       .eq('catalog_item_id', catalogItemId)
-      .eq('added_by', userId)
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle();
