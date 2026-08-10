@@ -2,10 +2,11 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { MetalMania_400Regular, useFonts } from '@expo-google-fonts/metal-mania';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { StyleSheet, View, useColorScheme } from 'react-native';
 import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { AdBanner } from '../src/presentation/components/AdBanner';
 import { queryClient } from '../src/config/queryClient';
 import { darkTheme, lightTheme } from '../src/presentation/theme/tokens';
 
@@ -61,9 +62,27 @@ export default function RootLayout() {
               false quita la barra superior por defecto de cada pantalla — la
               teníamos activada sin querer al principio y salía fea (te acordarás
               del bug de la barra "(auth)"). */}
-          <Stack screenOptions={{ headerShown: false }} />
+          {/* AdBanner vive FUERA del <Stack/>, como hermano suyo dentro de
+              esta columna flex — así el hueco de abajo se reserva en TODAS
+              las pantallas de golpe (el Stack solo ocupa lo que le queda),
+              sin tener que tocar cada pantalla una a una. */}
+          <View style={styles.appContainer}>
+            <View style={styles.screenArea}>
+              <Stack screenOptions={{ headerShown: false }} />
+            </View>
+            <AdBanner />
+          </View>
         </PaperProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  appContainer: {
+    flex: 1,
+  },
+  screenArea: {
+    flex: 1,
+  },
+});

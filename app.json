@@ -54,7 +54,15 @@
       ],
       "expo-notifications",
       "@react-native-firebase/app",
-      "@react-native-firebase/analytics"
+      "@react-native-firebase/analytics",
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-8850172965752172~9010439949",
+          "iosAppId": "ca-app-pub-8850172965752172~2580762966",
+          "userTrackingUsageDescription": "Este identificador se usa para mostrarte anuncios más relevantes. Puedes seguir usando CuentaBirras igual si no lo permites."
+        }
+      ]
     ],
     "extra": {
       "router": {},
