@@ -62,6 +62,14 @@
           "iosAppId": "ca-app-pub-8850172965752172~2580762966",
           "userTrackingUsageDescription": "Este identificador se usa para mostrarte anuncios más relevantes. Puedes seguir usando CuentaBirras igual si no lo permites."
         }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.3.0"
+          }
+        }
       ]
     ],
     "extra": {
