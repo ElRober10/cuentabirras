@@ -15,6 +15,7 @@
  * @property {string|null} avatarUrl
  * @property {boolean} isAdmin - Solo true para la cuenta de super admin (ver migración 0023); da acceso al panel de administración.
  * @property {string|null} termsAcceptedAt - Cuándo aceptó los términos y la política de privacidad; null en cuentas creadas con Google que todavía no han pasado por "Editar datos personales" para aceptarlos (ver migración 0029 y 0030).
+ * @property {string} authProvider - 'email' o 'google', según con qué te autenticaste (viene de auth.users, no de profiles) — se usa para no ofrecer "cambiar contraseña" a cuentas de Google, que nunca tuvieron una.
  */
 
 // Este archivo no tiene ninguna función ni variable real que usar en otro

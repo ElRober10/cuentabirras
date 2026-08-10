@@ -1,4 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Linking, StyleSheet, View } from 'react-native';
@@ -30,6 +31,9 @@ export default function EditProfileScreen() {
   // registro normal — mientras no la acepten, esta pantalla también la
   // exige (createEditProfileSchema recibe este booleano justamente por eso).
   const requireTerms = !user?.termsAcceptedAt;
+  // Una cuenta de Google nunca tuvo contraseña propia (el login es siempre
+  // vía Google) — ofrecer "cambiar contraseña" ahí no tendría sentido.
+  const isGoogleAccount = user?.authProvider === 'google';
 
   const {
     control,
@@ -85,6 +89,10 @@ export default function EditProfileScreen() {
   return (
     <KeyboardAwareScreen contentContainerStyle={styles.content}>
       <Text variant="headlineSmall">Editar datos personales</Text>
+
+      <AppButton mode="text" onPress={() => router.replace('/(app)')} style={styles.homeButton}>
+        Ir al inicio
+      </AppButton>
 
       {emailChangePending ? (
         <Text style={[styles.emailNotice, { color: theme.colors.primary }]}>
@@ -187,51 +195,57 @@ export default function EditProfileScreen() {
         </>
       ) : null}
 
-      <Text variant="titleMedium" style={styles.sectionTitle}>
-        Cambiar contraseña
-      </Text>
-      <Text style={{ color: theme.colors.onSurfaceVariant }}>Déjalo en blanco si no quieres cambiarla.</Text>
+      {isGoogleAccount ? null : (
+        <>
+          <Text variant="titleMedium" style={styles.sectionTitle}>
+            Cambiar contraseña
+          </Text>
+          <Text style={{ color: theme.colors.onSurfaceVariant }}>Déjalo en blanco si no quieres cambiarla.</Text>
 
-      <Controller
-        control={control}
-        name="newPassword"
-        render={({ field }) => (
-          <TextInput
-            label="Nueva contraseña"
-            value={field.value}
-            onChangeText={field.onChange}
-            secureTextEntry={!showPassword}
-            autoComplete="new-password"
-            textContentType="newPassword"
-            right={<TextInput.Icon icon={showPassword ? 'eye-off' : 'eye'} onPress={() => setShowPassword((v) => !v)} />}
-            error={!!errors.newPassword}
-            style={styles.input}
+          <Controller
+            control={control}
+            name="newPassword"
+            render={({ field }) => (
+              <TextInput
+                label="Nueva contraseña"
+                value={field.value}
+                onChangeText={field.onChange}
+                secureTextEntry={!showPassword}
+                autoComplete="new-password"
+                textContentType="newPassword"
+                right={
+                  <TextInput.Icon icon={showPassword ? 'eye-off' : 'eye'} onPress={() => setShowPassword((v) => !v)} />
+                }
+                error={!!errors.newPassword}
+                style={styles.input}
+              />
+            )}
           />
-        )}
-      />
-      <HelperText type="error" visible={!!errors.newPassword}>
-        {errors.newPassword?.message}
-      </HelperText>
+          <HelperText type="error" visible={!!errors.newPassword}>
+            {errors.newPassword?.message}
+          </HelperText>
 
-      <Controller
-        control={control}
-        name="confirmNewPassword"
-        render={({ field }) => (
-          <TextInput
-            label="Confirmar nueva contraseña"
-            value={field.value}
-            onChangeText={field.onChange}
-            secureTextEntry={!showPassword}
-            autoComplete="new-password"
-            textContentType="newPassword"
-            error={!!errors.confirmNewPassword}
-            style={styles.input}
+          <Controller
+            control={control}
+            name="confirmNewPassword"
+            render={({ field }) => (
+              <TextInput
+                label="Confirmar nueva contraseña"
+                value={field.value}
+                onChangeText={field.onChange}
+                secureTextEntry={!showPassword}
+                autoComplete="new-password"
+                textContentType="newPassword"
+                error={!!errors.confirmNewPassword}
+                style={styles.input}
+              />
+            )}
           />
-        )}
-      />
-      <HelperText type="error" visible={!!errors.confirmNewPassword}>
-        {errors.confirmNewPassword?.message}
-      </HelperText>
+          <HelperText type="error" visible={!!errors.confirmNewPassword}>
+            {errors.confirmNewPassword?.message}
+          </HelperText>
+        </>
+      )}
 
       {serverError ? (
         <HelperText type="error" visible>
@@ -264,8 +278,15 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 4,
   },
+  homeButton: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
   button: {
     marginTop: 24,
+    // 1mm ≈ 6.3dp en móvil — 8mm son ~50dp para que no se quede pegado al
+    // borde de abajo (o tapado por los gestos del sistema en Android).
+    marginBottom: 50,
   },
   termsRow: {
     flexDirection: 'row',

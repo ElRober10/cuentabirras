@@ -12,11 +12,19 @@ import { supabase } from '../client';
 // formato que usa el resto de la app en JS (camelCase: firstName). Este
 // "traducir de un formato a otro" es exactamente el trabajo de un repositorio.
 async function fetchProfile(userId) {
-  const { data, error } = await supabase
-    .from('profiles')
-    .select('id, first_name, last_name, email, phone, username, avatar_url, is_admin, terms_accepted_at')
-    .eq('id', userId)
-    .single();
+  // profiles no sabe con qué te autenticaste (eso vive en auth.users, no en
+  // nuestra tabla) — lo sacamos de la sesión local (getSession no hace red,
+  // lee de lo que ya hay guardado en el dispositivo) para poder distinguir
+  // cuentas creadas con Google de las de email/contraseña, por ejemplo para
+  // no ofrecer "cambiar contraseña" a quien nunca tuvo una (ver edit-profile.jsx).
+  const [{ data, error }, { data: sessionData }] = await Promise.all([
+    supabase
+      .from('profiles')
+      .select('id, first_name, last_name, email, phone, username, avatar_url, is_admin, terms_accepted_at')
+      .eq('id', userId)
+      .single(),
+    supabase.auth.getSession(),
+  ]);
 
   if (error) throw error;
 
@@ -30,6 +38,7 @@ async function fetchProfile(userId) {
     avatarUrl: data.avatar_url,
     isAdmin: data.is_admin,
     termsAcceptedAt: data.terms_accepted_at,
+    authProvider: sessionData.session?.user?.app_metadata?.provider ?? 'email',
   };
 }
 
