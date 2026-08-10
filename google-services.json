@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1538557379",
+    "project_id": "cuentabirras-28aa1",
+    "storage_bucket": "cuentabirras-28aa1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1538557379:android:61ddd3fe8dad1cb683a976",
+        "android_client_info": {
+          "package_name": "com.elrober10.cuentabirras"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA20HgSKdmpAtANRKTSbgP83_eIw9izY0Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
