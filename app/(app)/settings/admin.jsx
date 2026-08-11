@@ -10,11 +10,23 @@ import { container } from '../../../src/di/container';
 // (get_admin_dashboard_stats comprueba is_admin y lanza si no lo eres) — el
 // guardado del menú de Ajustes (que no enseña la entrada a quien no es
 // admin) es solo comodidad de interfaz, no la protección real.
+// `getValue` es opcional — por defecto se enseña data[key] tal cual (un
+// número); solo hace falta cuando el valor a mostrar no es un número
+// suelto (la bebida más pedida junta nombre + cantidad en un mismo texto).
 const STATS = [
   { key: 'totalUsers', label: 'Usuarios registrados', icon: 'account-group' },
+  { key: 'newUsersLast7Days', label: 'Registros en los últimos 7 días', icon: 'account-plus' },
   { key: 'totalBars', label: 'Bares creados', icon: 'store' },
   { key: 'totalTabs', label: 'Cuentas abiertas en total', icon: 'receipt' },
   { key: 'totalDrinks', label: 'Bebidas pedidas en total', icon: 'glass-mug-variant' },
+  {
+    key: 'topDrink',
+    label: 'Bebida más pedida',
+    icon: 'trophy-outline',
+    getValue: (data) => (data.topDrinkName ? `${data.topDrinkName} (${data.topDrinkCount})` : '—'),
+  },
+  { key: 'activeLinkedAccounts', label: 'Cuentas vinculadas activas', icon: 'link-variant' },
+  { key: 'customDrinksPendingIcon', label: 'Bebidas "Otro" sin icono', icon: 'image-off-outline' },
 ];
 
 export default function AdminDashboardScreen() {
@@ -50,7 +62,7 @@ export default function AdminDashboardScreen() {
             <MaterialCommunityIcons name={stat.icon} size={26} color={theme.colors.onPrimaryContainer} />
           </View>
           <View style={styles.cardText}>
-            <Text variant="headlineSmall">{statsQuery.data[stat.key]}</Text>
+            <Text variant="headlineSmall">{stat.getValue ? stat.getValue(statsQuery.data) : statsQuery.data[stat.key]}</Text>
             <Text style={{ color: theme.colors.onSurfaceVariant }}>{stat.label}</Text>
           </View>
         </View>

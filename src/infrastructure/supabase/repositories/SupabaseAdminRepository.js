@@ -15,6 +15,11 @@ export const supabaseAdminRepository = {
       totalBars: Number(row.total_bars),
       totalTabs: Number(row.total_tabs),
       totalDrinks: Number(row.total_drinks),
+      newUsersLast7Days: Number(row.new_users_last_7_days),
+      activeLinkedAccounts: Number(row.active_linked_accounts),
+      topDrinkName: row.top_drink_name,
+      topDrinkCount: Number(row.top_drink_count),
+      customDrinksPendingIcon: Number(row.custom_drinks_pending_icon),
     };
   },
 };

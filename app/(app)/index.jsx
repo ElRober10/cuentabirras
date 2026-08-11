@@ -328,13 +328,16 @@ const styles = StyleSheet.create({
     opacity: 0.7,
     paddingHorizontal: 24,
   },
-  // alignSelf 'flex-end' lo lleva a la derecha del todo; marginBottom extra
-  // (~5mm ≈ 30dp) para separarlo de los botones de gestos/navegación del
-  // móvil, que quedaban justo debajo del "Cerrar sesión" de antes.
+  // alignSelf 'flex-end' lo lleva a la derecha del todo. marginBottom
+  // bajado ~7mm (~44dp) respecto al valor anterior (30): desde que existe
+  // el banner de anuncios (AdBanner, fuera de esta pantalla, reserva su
+  // propio hueco con el margen de seguridad del móvil incluido), el
+  // colchón extra de antes ya no hacía falta y dejaba estos botones
+  // demasiado altos.
   cornerButtons: {
     flexDirection: 'row',
     alignSelf: 'flex-end',
     marginRight: 8,
-    marginBottom: 30,
+    marginBottom: -14,
   },
 });
