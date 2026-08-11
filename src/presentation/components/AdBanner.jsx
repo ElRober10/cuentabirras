@@ -1,6 +1,6 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -33,6 +33,13 @@ export function AdBanner() {
   // guarda en estado (no en un ref) porque también hace falta durante el
   // render, para pintar <BannerAd>.
   const [adsModule, setAdsModule] = useState(null);
+  // Mensaje de diagnóstico visible mientras probamos la integración — no es
+  // para el usuario final, es para poder ver qué ha fallado sin necesitar
+  // conectar el móvil a un ordenador a sacar logs. Se puede quitar cuando
+  // ya sepamos que todo funciona bien de verdad.
+  const [debugMessage, setDebugMessage] = useState(() =>
+    isExpoGo ? 'Expo Go: los anuncios no funcionan aquí, hace falta un build.' : null,
+  );
 
   useEffect(() => {
     if (isExpoGo) return undefined;
@@ -53,11 +60,15 @@ export function AdBanner() {
 
         await googleMobileAds.default().initialize();
 
-        if (!cancelled) setAdsModule(googleMobileAds);
+        if (!cancelled) {
+          setAdsModule(googleMobileAds);
+          setDebugMessage(null);
+        }
       } catch (error) {
         // "Best effort": sin anuncios en este dispositivo/sesión, pero
         // nunca debe romper el resto de la app.
         console.warn('No se pudo inicializar el SDK de anuncios:', error);
+        if (!cancelled) setDebugMessage(`Init falló: ${error?.message ?? String(error)}`);
       }
     }
 
@@ -70,7 +81,15 @@ export function AdBanner() {
   const wrapperHeight = BANNER_HEIGHT + insets.bottom;
 
   if (!adsModule) {
-    return <View style={[styles.wrapper, { height: wrapperHeight, backgroundColor: theme.colors.surface }]} />;
+    return (
+      <View style={[styles.wrapper, { height: wrapperHeight, backgroundColor: theme.colors.surface }]}>
+        {debugMessage ? (
+          <Text style={styles.debugText} numberOfLines={2}>
+            {debugMessage}
+          </Text>
+        ) : null}
+      </View>
+    );
   }
 
   const { BannerAd, BannerAdSize } = adsModule;
@@ -82,7 +101,14 @@ export function AdBanner() {
         { height: wrapperHeight, paddingBottom: insets.bottom, backgroundColor: theme.colors.surface },
       ]}
     >
-      <BannerAd unitId={BANNER_AD_UNIT_ID} size={BannerAdSize.BANNER} />
+      <BannerAd
+        unitId={BANNER_AD_UNIT_ID}
+        size={BannerAdSize.BANNER}
+        onAdFailedToLoad={(error) => {
+          console.warn('El anuncio no se pudo cargar:', error);
+          setDebugMessage(`Anuncio falló: ${error?.message ?? String(error)}`);
+        }}
+      />
     </View>
   );
 }
@@ -91,5 +117,11 @@ const styles = StyleSheet.create({
   wrapper: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  debugText: {
+    fontSize: 10,
+    textAlign: 'center',
+    paddingHorizontal: 8,
+    color: '#b00020',
   },
 });
