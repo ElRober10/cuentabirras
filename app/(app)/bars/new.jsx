@@ -1,10 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Dialog, Divider, HelperText, Portal, Text, TextInput } from 'react-native-paper';
+import { Divider, HelperText, Text, TextInput, useTheme } from 'react-native-paper';
 
 import { createBarSchema } from '../../../src/application/bars/createBarSchema';
 import { findNearbyPublicBars } from '../../../src/application/bars/findNearbyPublicBar';
@@ -13,33 +13,61 @@ import { deviceLocation } from '../../../src/infrastructure/location/deviceLocat
 import { AppButton } from '../../../src/presentation/components/AppButton';
 import { KeyboardAwareScreen } from '../../../src/presentation/components/KeyboardAwareScreen';
 
+// Antes, esta pantalla era "escribe un nombre y crea" — solo DESPUÉS de
+// enviar el formulario se comprobaba si había bares cerca y se
+// interrumpía con un diálogo "¿es este?". El usuario pidió darle la
+// vuelta: enseñar los bares que ya existen cerca de ti desde el principio
+// (antes incluso de escribir nada), para elegir uno directamente, en vez
+// de tener que escribir el nombre a ciegas y que la app te avise después.
 export default function NewBarScreen() {
+  const theme = useTheme();
   const queryClient = useQueryClient();
   const [serverError, setServerError] = useState(null);
-  // Bares públicos cercanos encontrados justo antes de crear (array vacío
-  // si no hay ninguno, o si no tenemos ubicación para comprobarlo).
+  const [isJoining, setIsJoining] = useState(false);
+  // Bares públicos a menos de 500m (ver findNearbyPublicBar.js) — se piden
+  // UNA vez, en cuanto se resuelve tu ubicación, y a partir de ahí solo se
+  // filtran en pantalla según lo que vayas escribiendo (sin volver a
+  // pedirlos cada vez que tecleas).
   const [nearbyBars, setNearbyBars] = useState([]);
 
   // useState con una función como valor inicial ("inicializador perezoso")
-  // se ejecuta UNA sola vez, en cuanto se monta la pantalla — antes incluso
-  // de que escribas el nombre del bar. Así lanzamos la petición de
-  // ubicación en segundo plano desde el primer instante, y cuando llegue el
-  // momento de crear el bar, si ya se resolvió la usamos al momento, y si
-  // no, esperamos lo que quede (pero ya lleva un rato en marcha).
+  // se ejecuta UNA sola vez, en cuanto se monta la pantalla — así lanzamos
+  // la petición de ubicación en segundo plano desde el primer instante.
   const [positionPromise] = useState(() => deviceLocation.getCurrentPosition());
+
+  useEffect(() => {
+    let cancelled = false;
+    positionPromise.then(async (position) => {
+      // findNearbyPublicBars ya sabe devolver [] si position es null (sin
+      // permiso de ubicación) — se le pasa {} en ese caso solo para no
+      // desestructurar sobre null.
+      const bars = await findNearbyPublicBars(position ?? {});
+      if (!cancelled) setNearbyBars(bars);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [positionPromise]);
 
   const {
     control,
     handleSubmit,
+    watch,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(createBarSchema),
     defaultValues: { name: '' },
   });
 
-  // Se llama tanto al enviar el formulario la primera vez, como al confirmar
-  // "crear uno nuevo de todas formas" tras ver el aviso de duplicado.
-  const createBar = async (values, { skipDuplicateCheck = false } = {}) => {
+  // Sin escribir nada todavía, se enseñan TODOS los bares cercanos (para
+  // poder elegir uno de un vistazo, sin tener que escribir su nombre
+  // exacto); en cuanto escribes, se filtran por lo que coincida.
+  const typedName = watch('name');
+  const matchingBars = typedName.trim()
+    ? nearbyBars.filter((bar) => bar.name.toLowerCase().includes(typedName.trim().toLowerCase()))
+    : nearbyBars;
+
+  const onSubmit = async (values) => {
     setServerError(null);
     try {
       // La ubicación es opcional en todos los sentidos: si no hay permiso o
@@ -47,14 +75,6 @@ export default function NewBarScreen() {
       // coordenadas (queda privado). Reutilizamos la petición que ya
       // lanzamos al abrir la pantalla, en vez de pedirla de nuevo aquí.
       const position = await positionPromise;
-
-      if (!skipDuplicateCheck && position) {
-        const candidates = await findNearbyPublicBars(position);
-        if (candidates.length > 0) {
-          setNearbyBars(candidates);
-          return; // esperamos a que el usuario decida en el diálogo
-        }
-      }
 
       const bar = await container.barRepository.createBar({
         name: values.name,
@@ -78,33 +98,30 @@ export default function NewBarScreen() {
     }
   };
 
-  const onSubmit = (values) => createBar(values);
-
   // Unirse a un bar ya existente: hace falta llamar a joinBar (RPC
   // security definer, migración 0018) ANTES de navegar — hasta ese
   // momento no eres miembro, así que ni RLS te dejaría verlo ni te saldría
   // luego en tu lista. queryClient.invalidateQueries hace que la próxima
   // vez que vuelvas a la pantalla principal ya salga en tu lista.
   const handleUseExisting = async (barId) => {
-    setNearbyBars([]);
     setServerError(null);
+    setIsJoining(true);
     try {
       await container.barRepository.joinBar(barId);
       queryClient.invalidateQueries({ queryKey: ['bars'] });
       router.replace(`/bars/${barId}`);
     } catch (error) {
       setServerError(error.message);
+      setIsJoining(false);
     }
   };
-
-  const handleCreateAnyway = handleSubmit((values) => {
-    setNearbyBars([]);
-    createBar(values, { skipDuplicateCheck: true });
-  });
 
   return (
     <KeyboardAwareScreen>
       <Text variant="headlineSmall">Nuevo bar</Text>
+      <Text style={[styles.intro, { color: theme.colors.onSurfaceVariant }]}>
+        Busca un bar que ya exista cerca de ti, o escribe uno nuevo para crearlo.
+      </Text>
 
       <Controller
         control={control}
@@ -123,56 +140,64 @@ export default function NewBarScreen() {
         {errors.name?.message}
       </HelperText>
 
+      {matchingBars.length > 0 ? (
+        <View
+          style={[styles.suggestions, { borderColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface }]}
+        >
+          <Text style={[styles.suggestionsTitle, { color: theme.colors.onSurfaceVariant }]}>
+            {typedName.trim() ? 'Bares que coinciden, cerca de ti' : 'Bares cerca de ti'}
+          </Text>
+          {matchingBars.map((bar, index) => (
+            <View key={bar.id}>
+              {index > 0 ? <Divider /> : null}
+              <Pressable onPress={() => handleUseExisting(bar.id)} disabled={isJoining} style={styles.suggestionRow}>
+                <Text variant="titleMedium">{bar.name}</Text>
+              </Pressable>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
       {serverError ? (
         <HelperText type="error" visible>
           {serverError}
         </HelperText>
       ) : null}
 
-      <AppButton mode="contained" onPress={handleSubmit(onSubmit)} loading={isSubmitting} style={styles.button}>
-        Crear bar
+      <AppButton mode="contained" onPress={handleSubmit(onSubmit)} loading={isSubmitting || isJoining} style={styles.button}>
+        Crear bar nuevo
       </AppButton>
-
-      <Portal>
-        <Dialog visible={nearbyBars.length > 0} onDismiss={() => setNearbyBars([])}>
-          <Dialog.Title>¿Ya existe este bar?</Dialog.Title>
-          <Dialog.Content>
-            <Text style={styles.nearbyIntro}>
-              Hay {nearbyBars.length === 1 ? 'un bar muy cerca' : `${nearbyBars.length} bares muy cerca`}. Si es
-              alguno de estos, entra directamente; si no, crea uno nuevo.
-            </Text>
-          </Dialog.Content>
-          {nearbyBars.map((bar, index) => (
-            <View key={bar.id}>
-              {index > 0 ? <Divider /> : null}
-              <Pressable onPress={() => handleUseExisting(bar.id)} style={styles.nearbyRow}>
-                <Text variant="titleMedium">{bar.name}</Text>
-              </Pressable>
-            </View>
-          ))}
-          <Dialog.Actions>
-            <AppButton mode="text" onPress={handleCreateAnyway}>
-              Crear un bar nuevo
-            </AppButton>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
     </KeyboardAwareScreen>
   );
 }
 
 const styles = StyleSheet.create({
+  intro: {
+    marginTop: 4,
+    marginBottom: 4,
+  },
   input: {
     marginTop: 8,
   },
   button: {
     marginTop: 16,
   },
-  nearbyIntro: {
-    marginBottom: 4,
+  suggestions: {
+    borderRadius: 12,
+    borderWidth: 1,
+    marginTop: 4,
+    overflow: 'hidden',
   },
-  nearbyRow: {
-    paddingHorizontal: 24,
+  suggestionsTitle: {
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  suggestionRow: {
+    paddingHorizontal: 16,
     paddingVertical: 14,
   },
 });
