@@ -2,12 +2,15 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { MetalMania_400Regular, useFonts } from '@expo-google-fonts/metal-mania';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
+import { useState } from 'react';
 import { StyleSheet, View, useColorScheme } from 'react-native';
 import { PaperProvider } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AdBanner } from '../src/presentation/components/AdBanner';
+import { UpdateAvailableDialog } from '../src/presentation/components/UpdateAvailableDialog';
 import { queryClient } from '../src/config/queryClient';
+import { useAppUpdateCheck } from '../src/presentation/hooks/useAppUpdateCheck';
 import { darkTheme, lightTheme } from '../src/presentation/theme/tokens';
 
 // Nota sobre expo-router (el sistema de navegación): cada archivo dentro de
@@ -29,6 +32,12 @@ export default function RootLayout() {
   // es false, no dibujamos nada (evita ver el texto un instante con la
   // fuente por defecto y que luego "salte" a la definitiva).
   const [fontsLoaded] = useFonts({ MetalMania_400Regular });
+
+  // Comprobación de versión: se dispara una vez al abrir la app (ver
+  // useAppUpdateCheck.js), en la raíz de todo para que salga sin importar
+  // en qué pantalla estés, incluso antes de iniciar sesión.
+  const updateInfo = useAppUpdateCheck();
+  const [updateDismissed, setUpdateDismissed] = useState(false);
 
   if (!fontsLoaded) {
     return null;
@@ -72,6 +81,10 @@ export default function RootLayout() {
             </View>
             <AdBanner />
           </View>
+          <UpdateAvailableDialog
+            updateInfo={updateDismissed ? null : updateInfo}
+            onDismiss={() => setUpdateDismissed(true)}
+          />
         </PaperProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
