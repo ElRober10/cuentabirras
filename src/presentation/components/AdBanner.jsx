@@ -1,6 +1,6 @@
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { useEffect, useState } from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -24,22 +24,16 @@ const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreCl
 // <Stack/>, como hermano suyo) — así se ve en TODAS las pantallas de la app
 // sin tener que tocar cada pantalla una a una. El hueco de abajo se reserva
 // SIEMPRE, cargue el anuncio o no (sin conexión, sin inventario disponible,
-// Expo Go...), para que el resto de la interfaz nunca "salte".
+// Expo Go, cuenta de AdMob aún en revisión...), para que el resto de la
+// interfaz nunca "salte" — y para un usuario real, un anuncio que no carga
+// simplemente no debe notarse (sin mensajes de error visibles).
 export function AdBanner() {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
-  // null mientras carga o si no está disponible (Expo Go, error de
-  // inicialización...); el módulo ya cargado en cuanto está listo — se
-  // guarda en estado (no en un ref) porque también hace falta durante el
-  // render, para pintar <BannerAd>.
+  // null mientras carga o si no está disponible; el módulo ya cargado en
+  // cuanto está listo — se guarda en estado (no en un ref) porque también
+  // hace falta durante el render, para pintar <BannerAd>.
   const [adsModule, setAdsModule] = useState(null);
-  // Mensaje de diagnóstico visible mientras probamos la integración — no es
-  // para el usuario final, es para poder ver qué ha fallado sin necesitar
-  // conectar el móvil a un ordenador a sacar logs. Se puede quitar cuando
-  // ya sepamos que todo funciona bien de verdad.
-  const [debugMessage, setDebugMessage] = useState(() =>
-    isExpoGo ? 'Expo Go: los anuncios no funcionan aquí, hace falta un build.' : null,
-  );
 
   useEffect(() => {
     if (isExpoGo) return undefined;
@@ -60,15 +54,12 @@ export function AdBanner() {
 
         await googleMobileAds.default().initialize();
 
-        if (!cancelled) {
-          setAdsModule(googleMobileAds);
-          setDebugMessage(null);
-        }
+        if (!cancelled) setAdsModule(googleMobileAds);
       } catch (error) {
         // "Best effort": sin anuncios en este dispositivo/sesión, pero
-        // nunca debe romper el resto de la app.
+        // nunca debe romper el resto de la app. Solo queda en los logs del
+        // dispositivo (adb logcat / consola de Metro), nunca visible en pantalla.
         console.warn('No se pudo inicializar el SDK de anuncios:', error);
-        if (!cancelled) setDebugMessage(`Init falló: ${error?.message ?? String(error)}`);
       }
     }
 
@@ -81,15 +72,7 @@ export function AdBanner() {
   const wrapperHeight = BANNER_HEIGHT + insets.bottom;
 
   if (!adsModule) {
-    return (
-      <View style={[styles.wrapper, { height: wrapperHeight, backgroundColor: theme.colors.surface }]}>
-        {debugMessage ? (
-          <Text style={styles.debugText} numberOfLines={2}>
-            {debugMessage}
-          </Text>
-        ) : null}
-      </View>
-    );
+    return <View style={[styles.wrapper, { height: wrapperHeight, backgroundColor: theme.colors.surface }]} />;
   }
 
   const { BannerAd, BannerAdSize } = adsModule;
@@ -104,10 +87,7 @@ export function AdBanner() {
       <BannerAd
         unitId={BANNER_AD_UNIT_ID}
         size={BannerAdSize.BANNER}
-        onAdFailedToLoad={(error) => {
-          console.warn('El anuncio no se pudo cargar:', error);
-          setDebugMessage(`Anuncio falló: ${error?.message ?? String(error)}`);
-        }}
+        onAdFailedToLoad={(error) => console.warn('El anuncio no se pudo cargar:', error)}
       />
     </View>
   );
@@ -117,11 +97,5 @@ const styles = StyleSheet.create({
   wrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  debugText: {
-    fontSize: 10,
-    textAlign: 'center',
-    paddingHorizontal: 8,
-    color: '#b00020',
   },
 });

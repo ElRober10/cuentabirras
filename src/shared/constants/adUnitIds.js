@@ -1,15 +1,18 @@
-// ID de la unidad de anuncios (banner) — TODAVÍA es el de pruebas de Google
-// (TestIds.BANNER, de react-native-google-mobile-ads): siempre devuelve un
-// anuncio de prueba, sin importar cuenta ni país, y evita que un toque
-// accidental mientras probamos cuente como "actividad no válida" en la
-// cuenta real de AdMob (algo que Google penaliza de verdad, hasta con el
-// cierre de la cuenta — ver condiciones de AdSense, sección 5-6).
+// ID del bloque de anuncios (banner) real, uno por plataforma — creados en
+// AdMob (Aplicaciones → CuentaBirras → Bloques de anuncios → "Banner
+// principal"). Ojo: NO es lo mismo que el App ID de app.json (ese lleva
+// "~", este lleva "/" antes del número final).
 //
-// ANTES DE PUBLICAR EN LAS TIENDAS: hay que crear el bloque de anuncios de
-// verdad en AdMob (Aplicaciones → CuentaBirras → Bloques de anuncios →
-// Añadir bloque de anuncios → Banner) y sustituir esto por el ID real
-// (formato "ca-app-pub-8850172965752172/XXXXXXXXXX", con barra "/" antes
-// del número final, no "~" como el App ID de app.json).
-import { TestIds } from 'react-native-google-mobile-ads';
+// OJO al probar en real: al no ser ya IDs de prueba, cualquier toque
+// accidental en el propio anuncio mientras se prueba la app cuenta como
+// "actividad no válida" para AdMob (ver condiciones de AdSense, sección
+// 5-6) — evitar tocarlo aposta, solo mirar que aparece y que el hueco
+// reservado se ve bien.
+import { Platform } from 'react-native';
 
-export const BANNER_AD_UNIT_ID = TestIds.BANNER;
+const REAL_BANNER_AD_UNIT_ID = {
+  android: 'ca-app-pub-8850172965752172/7752398866',
+  ios: 'ca-app-pub-8850172965752172/7928226901',
+};
+
+export const BANNER_AD_UNIT_ID = Platform.select(REAL_BANNER_AD_UNIT_ID);
