@@ -1,19 +1,30 @@
 import { container } from '../../di/container';
 import { deviceLocation } from '../../infrastructure/location/deviceLocation';
+import { nearbyRadiusSetting } from '../../infrastructure/settings/nearbyRadiusSetting';
 import { distanceInMeters } from '../../shared/utils/geo';
 
 // Este es un "caso de uso" de verdad (no un simple pass-through al
-// repositorio): junta TRES fuentes de datos (los bares de Supabase, tu
-// posición GPS del móvil, y tus cuentas pasadas) y aplica la regla de
-// negocio de orden: distancia primero (si hay ubicación), número de veces
-// que has ido a ese bar como segundo criterio, y alfabético como último
-// desempate.
+// repositorio): junta CUATRO fuentes de datos (los bares de Supabase, tu
+// posición GPS del móvil, tus cuentas pasadas, y el radio configurado en
+// Ajustes) y aplica dos reglas de negocio: qué bares se enseñan (filtro) y
+// en qué orden (distancia primero si hay ubicación, número de veces que
+// has ido a ese bar como segundo criterio, y alfabético como desempate).
 export async function listBarsSortedByDistance() {
-  const [bars, position, myTabs] = await Promise.all([
+  const [bars, position, myTabs, radiusKm] = await Promise.all([
     container.barRepository.listVisibleBars(),
     deviceLocation.getCurrentPosition(), // puede devolver null si no hay permiso — lo manejamos abajo
     container.tabRepository.listAllForCurrentUser(),
+    nearbyRadiusSetting.get(),
   ]);
+
+  // Filtro: solo bares dentro del radio configurado — salvo los "privados"
+  // (sin coordenadas, ver migración 0018), que siempre se enseñan, y salvo
+  // que no tengamos tu posición (sin permiso de ubicación), en cuyo caso
+  // no se filtra nada porque no hay con qué comparar.
+  const radiusMeters = radiusKm * 1000;
+  const visibleBars = position
+    ? bars.filter((bar) => bar.latitude == null || distanceInMeters(position, bar) <= radiusMeters)
+    : bars;
 
   // Cuántas cuentas (tabs) has tenido en cada bar, sea cual sea su estado.
   const visitsByBar = {};
@@ -21,7 +32,7 @@ export async function listBarsSortedByDistance() {
     visitsByBar[tab.barId] = (visitsByBar[tab.barId] ?? 0) + 1;
   }
 
-  return [...bars].sort((a, b) => {
+  return [...visibleBars].sort((a, b) => {
     // 1) Distancia, solo si tenemos tu posición actual. Los bares privados
     // (sin coordenadas) reciben Infinity, así que nunca "ganan" por distancia.
     if (position) {
