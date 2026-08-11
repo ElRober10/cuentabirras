@@ -86,6 +86,12 @@ export const darkTheme = {
     background: amber.stout,
     surface: '#2E1F10',
     surfaceVariant: amber.amber90,
+    // Sin esto, Paper usa su rojo de error por defecto de MD3, que es
+    // distinto entre modo claro y oscuro (más rosado en oscuro) — el botón
+    // de quitar bebidas (TabItemRow.jsx) usa theme.colors.error como color
+    // del icono, y se veía de un rojo distinto según el modo. Mismo rojo
+    // que el tema claro en los dos, a propósito.
+    error: MD3LightTheme.colors.error,
   },
 };
 

@@ -403,8 +403,8 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: 16,
-    // 1mm ≈ 6.3dp en móvil (la densidad "dp" se define así: 160dp = 1
-    // pulgada = 25.4mm), así que subirlo ~8mm son unos 50dp más que antes.
-    bottom: 66,
+    // 1mm ≈ 6.3dp en móvil — había quedado muy alto tras subirlo 8mm
+    // (~50dp) en su día, así que ahora se baja ~6mm (~38dp) de vuelta: 66 - 38 = 28.
+    bottom: 28,
   },
 });
