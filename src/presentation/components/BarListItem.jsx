@@ -1,10 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Animated, Image, Pressable, StyleSheet, View } from 'react-native';
 import { IconButton, Text, useTheme } from 'react-native-paper';
 
-import { container } from '../../di/container';
 import { getBarPlaceholderPhoto } from '../../shared/constants/barPlaceholderPhotos';
 import { usePressScale } from '../hooks/usePressScale';
 
@@ -12,18 +10,18 @@ import { usePressScale } from '../hooks/usePressScale';
 // una; si no, una foto de bar "genérica" siempre la misma para ese bar), su
 // nombre, "Entrar al bar", un botón para editarlo (foto/precios, ver
 // bars/[barId]/edit.jsx) y otro para quitarlo de tu lista.
-export function BarListItem({ bar, onPress, onRequestEdit, onRequestRemove }) {
+//
+// `photoUrl` e `isPhotoLoading` vienen del padre (HomeScreen), que pide las
+// URLs firmadas de TODOS los bares de golpe en una sola consulta batched
+// (ver getSignedUrlsForBars) en vez de que cada tarjeta pida la suya por
+// separado — mucho más rápido con listas de varios bares.
+export function BarListItem({ bar, photoUrl, isPhotoLoading, onPress, onRequestEdit, onRequestRemove }) {
   const theme = useTheme();
   const { scale, onPressIn, onPressOut } = usePressScale({ pressedScale: 0.97 });
   // Si la URL firmada carga pero la imagen en sí no se puede pintar (por
   // ejemplo, un archivo corrupto de una subida anterior), esto evita que se
   // quede en blanco para siempre: caemos a la foto genérica.
   const [photoLoadFailed, setPhotoLoadFailed] = useState(false);
-
-  const { data: photoUrl } = useQuery({
-    queryKey: ['barPhotoUrl', bar.id],
-    queryFn: () => container.barPhotoRepository.getSignedUrlForBar(bar.id),
-  });
 
   // Si aún no hay fotos genéricas configuradas (BAR_PLACEHOLDER_PHOTOS vacío),
   // esto es null y caemos en el icono de antes como último respaldo.
@@ -33,7 +31,9 @@ export function BarListItem({ bar, onPress, onRequestEdit, onRequestRemove }) {
     <Pressable onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut}>
       <Animated.View style={[styles.card, { backgroundColor: theme.colors.surface, transform: [{ scale }] }]}>
         <View style={styles.photoWrapper}>
-          {photoUrl && !photoLoadFailed ? (
+          {isPhotoLoading ? (
+            <View style={[styles.photoPlaceholder, { backgroundColor: theme.colors.surfaceVariant }]} />
+          ) : photoUrl && !photoLoadFailed ? (
             <Image
               source={{ uri: photoUrl }}
               style={styles.photo}

@@ -82,6 +82,18 @@ export default function HomeScreen() {
     queryFn: listBarsSortedByDistance,
   });
 
+  // Las fotos de TODOS los bares (no solo los visibles ahora mismo) se
+  // piden de golpe en cuanto llega la lista — dos peticiones en total en
+  // vez de una cadena por bar (ver getSignedUrlsForBars). Al pedirlas para
+  // la lista entera y no solo para `visibleBars`, "Cargar más" revela
+  // fotos ya resueltas al instante, sin volver a pedir nada.
+  const barIds = useMemo(() => (bars ?? []).map((bar) => bar.id), [bars]);
+  const { data: photoUrlsByBarId = {}, isLoading: isPhotoUrlsLoading } = useQuery({
+    queryKey: ['barPhotoUrls', barIds],
+    queryFn: () => container.barPhotoRepository.getSignedUrlsForBars(barIds),
+    enabled: barIds.length > 0,
+  });
+
   const visibleBars = useMemo(() => (bars ?? []).slice(0, visibleCount), [bars, visibleCount]);
   const hasMore = (bars?.length ?? 0) > visibleBars.length;
 
@@ -195,6 +207,8 @@ export default function HomeScreen() {
             renderItem={({ item }) => (
               <BarListItem
                 bar={item}
+                photoUrl={photoUrlsByBarId[item.id] ?? null}
+                isPhotoLoading={isPhotoUrlsLoading}
                 onPress={() => router.push(`/bars/${item.id}`)}
                 onRequestEdit={(bar) => router.push({ pathname: `/bars/${bar.id}/edit`, params: { name: bar.name } })}
                 onRequestRemove={setBarPendingRemoval}

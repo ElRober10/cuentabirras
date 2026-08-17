@@ -112,6 +112,32 @@ export const supabaseBarPhotoRepository = {
     return data.signedUrl;
   },
 
+  // Versión "de golpe" de getSignedUrlForBar, para listas (ver
+  // app/(app)/index.jsx): en vez de una cadena de peticiones por cada bar,
+  // resuelve los photo_path de TODOS con una sola llamada al RPC
+  // get_bar_photo_paths (migración 0035) y luego pide todas las URLs
+  // firmadas juntas con createSignedUrls. Devuelve un mapa barId -> url
+  // (los bares sin ninguna foto, propia ni oficial, no aparecen en el mapa).
+  async getSignedUrlsForBars(barIds) {
+    if (barIds.length === 0) return {};
+
+    const { data: pathRows, error: pathsError } = await supabase.rpc('get_bar_photo_paths', { p_bar_ids: barIds });
+    if (pathsError) throw pathsError;
+    if (pathRows.length === 0) return {};
+
+    const paths = pathRows.map((row) => row.photo_path);
+    const { data: signedUrls, error: signError } = await supabase.storage.from(BUCKET).createSignedUrls(paths, 3600);
+    if (signError) throw signError;
+
+    const urlByPath = new Map(signedUrls.map((entry) => [entry.path, entry.signedUrl]));
+    const result = {};
+    for (const row of pathRows) {
+      const url = urlByPath.get(row.photo_path);
+      if (url) result[row.bar_id] = url;
+    }
+    return result;
+  },
+
   // --- Foto OFICIAL (solo admin, ver migración 0024) ---
 
   async getOfficialForBar(barId) {

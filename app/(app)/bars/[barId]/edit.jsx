@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { Asset } from 'expo-asset';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -44,11 +45,14 @@ export default function BarEditScreen() {
         localFileUri: asset.uri,
         mimeType: asset.mimeType,
       });
-      // La lista de bares (debajo, en la pila de navegación) tiene esta
-      // misma query cacheada — al invalidarla aquí, se refresca sola en
-      // cuanto volvamos a verla. Sirve para las dos (personal y oficial):
-      // getSignedUrlForBar ya resuelve cuál enseñar.
-      queryClient.invalidateQueries({ queryKey: ['barPhotoUrl', barId] });
+      // La lista de bares (debajo, en la pila de navegación) tiene las URLs
+      // de fotos cacheadas en batch bajo esta misma clave (ver
+      // getSignedUrlsForBars en HomeScreen) — al invalidarla aquí, sin más
+      // sufijo, react-query invalida cualquier query que empiece por
+      // 'barPhotoUrls' (da igual qué array de ids tuviera), y se refresca
+      // sola en cuanto volvamos a verla. Sirve para las dos (personal y
+      // oficial): getSignedUrlsForBars ya resuelve cuál enseñar.
+      queryClient.invalidateQueries({ queryKey: ['barPhotoUrls'] });
       setPhotoMenuVisible(false);
       setShowDefaultPhotos(false);
     } catch (error) {
@@ -57,6 +61,20 @@ export default function BarEditScreen() {
     } finally {
       setIsUploadingPhoto(false);
     }
+  };
+
+  // La calidad 0.6 del picker ya ayuda, pero no toca la RESOLUCIÓN — una
+  // foto moderna de móvil sigue saliendo con miles de píxeles de lado
+  // aunque esté recortada al cuadrado. La tarjeta donde se ve esta foto es
+  // pequeña, así que la reducimos a 800px de lado antes de subirla: mismo
+  // aspecto visual, mucho menos peso en Storage y de descarga para quien la
+  // vea después.
+  const compressForUpload = async (asset) => {
+    const manipulated = await ImageManipulator.manipulateAsync(asset.uri, [{ resize: { width: 800 } }], {
+      compress: 0.7,
+      format: ImageManipulator.SaveFormat.JPEG,
+    });
+    return { uri: manipulated.uri, mimeType: 'image/jpeg' };
   };
 
   const handleTakePhoto = async () => {
@@ -75,7 +93,7 @@ export default function BarEditScreen() {
       setPhotoMenuVisible(false);
       return;
     }
-    await uploadPhoto(result.assets[0]);
+    await uploadPhoto(await compressForUpload(result.assets[0]));
   };
 
   const handlePickFromGallery = async () => {
@@ -94,7 +112,7 @@ export default function BarEditScreen() {
       setPhotoMenuVisible(false);
       return;
     }
-    await uploadPhoto(result.assets[0]);
+    await uploadPhoto(await compressForUpload(result.assets[0]));
   };
 
   // Las fotos genéricas están empaquetadas dentro de la propia app
