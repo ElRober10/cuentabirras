@@ -22,4 +22,16 @@ export const supabaseAdminRepository = {
       customDrinksPendingIcon: Number(row.custom_drinks_pending_icon),
     };
   },
+
+  async getPendingIconRequests() {
+    const { data, error } = await supabase.rpc('get_pending_icon_requests');
+    if (error) throw error;
+    return data.map((row) => ({ name: row.name, pendingCount: Number(row.pending_count) }));
+  },
+
+  async applyIconToPendingDrinks({ name, icon }) {
+    const { data, error } = await supabase.rpc('apply_icon_to_pending_drinks', { p_name: name, p_icon: icon });
+    if (error) throw error;
+    return Number(data);
+  },
 };

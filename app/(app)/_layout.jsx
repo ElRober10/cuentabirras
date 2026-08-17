@@ -209,6 +209,7 @@ export default function AppLayout() {
         <Stack.Screen name="settings/link-account" options={{ headerShown: true, title: 'Vincular cuenta' }} />
         <Stack.Screen name="settings/history" options={{ headerShown: true, title: 'Histórico de cuentas' }} />
         <Stack.Screen name="settings/admin" options={{ headerShown: true, title: 'Panel de administración' }} />
+        <Stack.Screen name="settings/admin-icon-requests" options={{ headerShown: true, title: 'Solicitudes de icono' }} />
       </Stack>
 
       <PendingLinkInvitationDialog

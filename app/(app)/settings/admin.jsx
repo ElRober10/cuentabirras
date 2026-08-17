@@ -1,6 +1,7 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQuery } from '@tanstack/react-query';
-import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
+import { router } from 'expo-router';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { Text, useTheme } from 'react-native-paper';
 
 import { container } from '../../../src/di/container';
@@ -67,6 +68,20 @@ export default function AdminDashboardScreen() {
           </View>
         </View>
       ))}
+
+      <Pressable
+        onPress={() => router.push('/settings/admin-icon-requests')}
+        style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}
+      >
+        <View style={[styles.iconBadge, { backgroundColor: theme.colors.primaryContainer }]}>
+          <MaterialCommunityIcons name="image-edit-outline" size={26} color={theme.colors.onPrimaryContainer} />
+        </View>
+        <View style={styles.cardText}>
+          <Text variant="titleMedium">Solicitudes de icono</Text>
+          <Text style={{ color: theme.colors.onSurfaceVariant }}>Ver el listado y asignar iconos nuevos</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.onSurfaceVariant} />
+      </Pressable>
     </ScrollView>
   );
 }
