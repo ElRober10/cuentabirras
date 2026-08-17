@@ -25,6 +25,12 @@
 // (muy borracho) → `images[2]` (vomitando, se queda así de ahí en
 // adelante). `every` marca cada cuántas unidades se sube un nivel. Usa
 // `getUnitImage(icon, unitNumber)` para pintar la unidad correcta.
+//
+// `aliases` (opcional): palabras extra por las que el buscador del selector
+// (AddDrinkModal) debe encontrar esta bebida, además de por `label`. Por
+// ejemplo, todo lo que es un tipo de cerveza lleva `aliases: ['cerveza']`
+// para que buscar "cerveza" saque botellín, cañas, jarras, tercios y las
+// sin alcohol juntas, aunque ninguna se llame literalmente "cerveza".
 export const DRINK_ICONS = [
   // --- Cervezas ---
   {
@@ -34,6 +40,7 @@ export const DRINK_ICONS = [
     alcohol: true,
     ml: 250,
     scale: 0.8,
+    aliases: ['cerveza'],
     image: require('../../../assets/drinks/botellin.png'),
     stages: {
       every: 5,
@@ -51,7 +58,16 @@ export const DRINK_ICONS = [
     alcohol: true,
     ml: 330,
     scale: 0.9,
+    aliases: ['cerveza'],
     image: require('../../../assets/drinks/tercio.png'),
+    stages: {
+      every: 3,
+      images: [
+        require('../../../assets/drinks/tercio-s2.png'),
+        require('../../../assets/drinks/tercio-s3.png'),
+        require('../../../assets/drinks/tercio-s4.png'),
+      ],
+    },
   },
   {
     value: 'tercio-alhambra',
@@ -60,7 +76,16 @@ export const DRINK_ICONS = [
     alcohol: true,
     ml: 330,
     scale: 0.9,
+    aliases: ['cerveza'],
     image: require('../../../assets/drinks/tercio-alhambra.png'),
+    stages: {
+      every: 3,
+      images: [
+        require('../../../assets/drinks/tercio-alhambra-s2.png'),
+        require('../../../assets/drinks/tercio-alhambra-s3.png'),
+        require('../../../assets/drinks/tercio-alhambra-s4.png'),
+      ],
+    },
   },
   {
     value: 'tercio-1906',
@@ -69,7 +94,16 @@ export const DRINK_ICONS = [
     alcohol: true,
     ml: 330,
     scale: 0.9,
+    aliases: ['cerveza'],
     image: require('../../../assets/drinks/tercio-1906.png'),
+    stages: {
+      every: 3,
+      images: [
+        require('../../../assets/drinks/tercio-1906-s2.png'),
+        require('../../../assets/drinks/tercio-1906-s3.png'),
+        require('../../../assets/drinks/tercio-1906-s4.png'),
+      ],
+    },
   },
   {
     value: 'cana',
@@ -78,6 +112,7 @@ export const DRINK_ICONS = [
     alcohol: true,
     ml: 200,
     scale: 0.75,
+    aliases: ['cerveza'],
     image: require('../../../assets/drinks/cana.png'),
     stages: {
       every: 5,
@@ -95,6 +130,7 @@ export const DRINK_ICONS = [
     alcohol: true,
     ml: 300,
     scale: 0.95,
+    aliases: ['cerveza'],
     image: require('../../../assets/drinks/jarra.png'),
   },
   {
@@ -104,6 +140,7 @@ export const DRINK_ICONS = [
     alcohol: true,
     ml: 1000,
     scale: 1.25,
+    aliases: ['cerveza'],
     image: require('../../../assets/drinks/jarra-grande.png'),
   },
   {
@@ -113,6 +150,7 @@ export const DRINK_ICONS = [
     alcohol: false,
     ml: 250,
     scale: 0.85,
+    aliases: ['cerveza', 'sin alcohol'],
     image: require('../../../assets/drinks/sin-alcohol.png'),
   },
   {
@@ -122,6 +160,7 @@ export const DRINK_ICONS = [
     alcohol: false,
     ml: 250,
     scale: 0.85,
+    aliases: ['cerveza', 'sin alcohol'],
     image: require('../../../assets/drinks/sin-alcohol-00.png'),
   },
 
@@ -302,6 +341,68 @@ export const DRINK_ICONS = [
     image: require('../../../assets/drinks/nesquik.png'),
   },
 
+  // --- Vinos y batidos ---
+  {
+    value: 'vino-tinto',
+    label: 'Vino tinto',
+    category: 'bebida',
+    alcohol: true,
+    ml: 150,
+    scale: 0.85,
+    image: require('../../../assets/drinks/vino-tinto.png'),
+    stages: {
+      every: 3,
+      images: [
+        require('../../../assets/drinks/vino-tinto-s2.png'),
+        require('../../../assets/drinks/vino-tinto-s3.png'),
+        require('../../../assets/drinks/vino-tinto-s4.png'),
+      ],
+    },
+  },
+  {
+    value: 'vino-blanco',
+    label: 'Vino blanco',
+    category: 'bebida',
+    alcohol: true,
+    ml: 150,
+    scale: 0.85,
+    image: require('../../../assets/drinks/vino-blanco.png'),
+    stages: {
+      every: 3,
+      images: [
+        require('../../../assets/drinks/vino-blanco-s2.png'),
+        require('../../../assets/drinks/vino-blanco-s3.png'),
+        require('../../../assets/drinks/vino-blanco-s4.png'),
+      ],
+    },
+  },
+  {
+    value: 'tinto-verano',
+    label: 'Tinto de verano',
+    category: 'bebida',
+    alcohol: true,
+    ml: 200,
+    scale: 0.9,
+    image: require('../../../assets/drinks/tinto-verano.png'),
+    stages: {
+      every: 3,
+      images: [
+        require('../../../assets/drinks/tinto-verano-s2.png'),
+        require('../../../assets/drinks/tinto-verano-s3.png'),
+        require('../../../assets/drinks/tinto-verano-s4.png'),
+      ],
+    },
+  },
+  {
+    value: 'batido',
+    label: 'Batido',
+    category: 'bebida',
+    alcohol: false,
+    ml: 300,
+    scale: 0.85,
+    image: require('../../../assets/drinks/batido.png'),
+  },
+
   // --- Copas y chupitos --- (3 niveles de copa por PRECIO, no por sabor —
   // para no tener que meter una marca de licor distinta por cada bar)
   {
@@ -380,6 +481,14 @@ export const DRINK_ICONS = [
     ml: 40,
     scale: 0.5,
     image: require('../../../assets/drinks/tequifresa.png'),
+    stages: {
+      every: 3,
+      images: [
+        require('../../../assets/drinks/tequifresa-s2.png'),
+        require('../../../assets/drinks/tequifresa-s3.png'),
+        require('../../../assets/drinks/tequifresa-s4.png'),
+      ],
+    },
   },
   {
     value: 'crema-orujo',
