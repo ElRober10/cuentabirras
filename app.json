@@ -19,7 +19,6 @@
         "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "permissions": [
-        "android.permission.RECORD_AUDIO",
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
@@ -37,7 +36,8 @@
         "expo-image-picker",
         {
           "photosPermission": "CuentaBirras necesita acceso a tus fotos para ponerle una imagen a un bar.",
-          "cameraPermission": "CuentaBirras necesita acceso a la cámara para hacer una foto de un bar."
+          "cameraPermission": "CuentaBirras necesita acceso a la cámara para hacer una foto de un bar.",
+          "microphonePermission": false
         }
       ],
       [
