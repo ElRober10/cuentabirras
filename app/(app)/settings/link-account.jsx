@@ -2,8 +2,18 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
+import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, HelperText, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
+import {
+  ActivityIndicator,
+  Dialog,
+  HelperText,
+  Portal,
+  Snackbar,
+  Text,
+  TextInput,
+  useTheme,
+} from 'react-native-paper';
 
 import { linkInvitationEmailSchema } from '../../../src/application/invitations/linkInvitationEmailSchema';
 import { sendLinkInvitationByEmail } from '../../../src/application/invitations/sendLinkInvitationByEmail';
@@ -30,6 +40,7 @@ import { usePendingLinkInvitations } from '../../../src/presentation/hooks/usePe
 export default function LinkAccountScreen() {
   const theme = useTheme();
   const queryClient = useQueryClient();
+  const [unlinkConfirmVisible, setUnlinkConfirmVisible] = useState(false);
 
   const linkQuery = useQuery({
     queryKey: ['myAccountLink'],
@@ -40,13 +51,16 @@ export default function LinkAccountScreen() {
   const incomingInvitation = pendingInvitationsQuery.data?.[0] ?? null;
 
   const respondMutation = useMutation({
-    mutationFn: ({ requestId, accept }) => container.accountLinkRepository.respondToInvitation({ requestId, accept }),
+    mutationFn: ({ requestId, accept }) =>
+      container.accountLinkRepository.respondToInvitation({ requestId, accept }),
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['pendingLinkInvitations'] });
       queryClient.invalidateQueries({ queryKey: ['myAccountLink'] });
-      container.accountLinkRepository.notifyInvitationResponded(variables.requestId).catch((error) => {
-        console.warn('No se pudo enviar el push de respuesta:', error);
-      });
+      container.accountLinkRepository
+        .notifyInvitationResponded(variables.requestId)
+        .catch((error) => {
+          console.warn('No se pudo enviar el push de respuesta:', error);
+        });
     },
   });
 
@@ -78,7 +92,10 @@ export default function LinkAccountScreen() {
 
   const unlinkMutation = useMutation({
     mutationFn: (linkId) => container.accountLinkRepository.unlink(linkId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['myAccountLink'] }),
+    onSuccess: () => {
+      setUnlinkConfirmVisible(false);
+      queryClient.invalidateQueries({ queryKey: ['myAccountLink'] });
+    },
   });
 
   // Elegir contacto + enviar invitación + abrir WhatsApp son un solo paso
@@ -108,27 +125,38 @@ export default function LinkAccountScreen() {
       {linkQuery.data ? (
         <LinkedAccountBanner
           link={linkQuery.data}
-          onUnlink={() => unlinkMutation.mutate(linkQuery.data.linkId)}
+          onUnlink={() => setUnlinkConfirmVisible(true)}
           isUnlinking={unlinkMutation.isPending}
         />
       ) : incomingInvitation ? (
-        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant },
+          ]}
+        >
           <View style={[styles.iconBadge, { backgroundColor: theme.colors.primaryContainer }]}>
-            <MaterialCommunityIcons name="link-variant" size={30} color={theme.colors.onPrimaryContainer} />
+            <MaterialCommunityIcons
+              name="link-variant"
+              size={30}
+              color={theme.colors.onPrimaryContainer}
+            />
           </View>
           <Text variant="titleLarge" style={styles.centerText}>
             Invitación recibida
           </Text>
           <Text style={[styles.centerText, { color: theme.colors.onSurfaceVariant }]}>
-            {incomingInvitation.senderFirstName} {incomingInvitation.senderLastName} te ha invitado a vincular
-            vuestras cuentas, para compartir gasto entre las dos sin tener que repartir.
+            {incomingInvitation.senderFirstName} {incomingInvitation.senderLastName} te ha invitado
+            a vincular vuestras cuentas, para compartir gasto entre las dos sin tener que repartir.
           </Text>
           <View style={styles.respondRow}>
             <AppButton
               mode="outlined"
               loading={respondMutation.isPending && respondMutation.variables?.accept === false}
               disabled={respondMutation.isPending}
-              onPress={() => respondMutation.mutate({ requestId: incomingInvitation.requestId, accept: false })}
+              onPress={() =>
+                respondMutation.mutate({ requestId: incomingInvitation.requestId, accept: false })
+              }
               style={styles.respondButton}
             >
               Rechazar
@@ -137,7 +165,9 @@ export default function LinkAccountScreen() {
               mode="contained"
               loading={respondMutation.isPending && respondMutation.variables?.accept === true}
               disabled={respondMutation.isPending}
-              onPress={() => respondMutation.mutate({ requestId: incomingInvitation.requestId, accept: true })}
+              onPress={() =>
+                respondMutation.mutate({ requestId: incomingInvitation.requestId, accept: true })
+              }
               style={styles.respondButton}
             >
               Aceptar
@@ -147,9 +177,18 @@ export default function LinkAccountScreen() {
       ) : sentInvitationQuery.isLoading ? (
         <ActivityIndicator style={styles.spinner} />
       ) : sentInvitationQuery.data ? (
-        <View style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant },
+          ]}
+        >
           <View style={[styles.iconBadge, { backgroundColor: theme.colors.primaryContainer }]}>
-            <MaterialCommunityIcons name="clock-outline" size={30} color={theme.colors.onPrimaryContainer} />
+            <MaterialCommunityIcons
+              name="clock-outline"
+              size={30}
+              color={theme.colors.onPrimaryContainer}
+            />
           </View>
           <Text variant="titleLarge" style={styles.centerText}>
             Invitación enviada
@@ -159,7 +198,9 @@ export default function LinkAccountScreen() {
               ? `Esperando respuesta de ${sentInvitationQuery.data.recipientFirstName}`
               : 'Esperando respuesta'}
           </Text>
-          <Text style={[styles.centerText, styles.expiry, { color: theme.colors.onSurfaceVariant }]}>
+          <Text
+            style={[styles.centerText, styles.expiry, { color: theme.colors.onSurfaceVariant }]}
+          >
             Caduca el {formatDateTime(sentInvitationQuery.data.expiresAt)}
           </Text>
           <AppButton
@@ -174,26 +215,40 @@ export default function LinkAccountScreen() {
       ) : (
         <>
           <Text style={[styles.intro, { color: theme.colors.onSurfaceVariant }]}>
-            Vincula tu cuenta con la de otra persona: así, entre los dos, podéis ir añadiendo a la misma cuenta.
+            Vincula tu cuenta con la de otra persona: así, entre los dos, podéis ir añadiendo a la
+            misma cuenta.
           </Text>
 
           <Pressable
             onPress={() => phoneMutation.mutate()}
             disabled={phoneMutation.isPending}
-            style={[styles.option, { borderColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface }]}
+            style={[
+              styles.option,
+              { borderColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface },
+            ]}
           >
             <View style={[styles.optionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
               {phoneMutation.isPending ? (
                 <ActivityIndicator size={20} />
               ) : (
-                <MaterialCommunityIcons name="whatsapp" size={24} color={theme.colors.onPrimaryContainer} />
+                <MaterialCommunityIcons
+                  name="whatsapp"
+                  size={24}
+                  color={theme.colors.onPrimaryContainer}
+                />
               )}
             </View>
             <View style={styles.optionText}>
               <Text variant="titleMedium">Invitar por WhatsApp</Text>
-              <Text style={{ color: theme.colors.onSurfaceVariant }}>Elige un contacto de tu agenda</Text>
+              <Text style={{ color: theme.colors.onSurfaceVariant }}>
+                Elige un contacto de tu agenda
+              </Text>
             </View>
-            <MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.onSurfaceVariant} />
+            <MaterialCommunityIcons
+              name="chevron-right"
+              size={22}
+              color={theme.colors.onSurfaceVariant}
+            />
           </Pressable>
           {phoneMutation.isError ? (
             <HelperText type="error" visible>
@@ -201,12 +256,23 @@ export default function LinkAccountScreen() {
             </HelperText>
           ) : null}
 
-          <Text style={[styles.separator, { color: theme.colors.onSurfaceVariant }]}>o por email</Text>
+          <Text style={[styles.separator, { color: theme.colors.onSurfaceVariant }]}>
+            o por email
+          </Text>
 
-          <View style={[styles.emailCard, { borderColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface }]}>
+          <View
+            style={[
+              styles.emailCard,
+              { borderColor: theme.colors.outlineVariant, backgroundColor: theme.colors.surface },
+            ]}
+          >
             <View style={styles.emailCardHeader}>
               <View style={[styles.optionIcon, { backgroundColor: theme.colors.primaryContainer }]}>
-                <MaterialCommunityIcons name="email-outline" size={24} color={theme.colors.onPrimaryContainer} />
+                <MaterialCommunityIcons
+                  name="email-outline"
+                  size={24}
+                  color={theme.colors.onPrimaryContainer}
+                />
               </View>
               <Text variant="titleMedium">Invitar por email</Text>
             </View>
@@ -256,8 +322,34 @@ export default function LinkAccountScreen() {
         }}
         duration={4000}
       >
-        {cancelMutation.error?.message ?? unlinkMutation.error?.message ?? 'No se pudo completar la acción.'}
+        {cancelMutation.error?.message ??
+          unlinkMutation.error?.message ??
+          'No se pudo completar la acción.'}
       </Snackbar>
+
+      <Portal>
+        <Dialog visible={unlinkConfirmVisible} onDismiss={() => setUnlinkConfirmVisible(false)}>
+          <Dialog.Title>¿Desvincular cuenta?</Dialog.Title>
+          <Dialog.Content>
+            <Text>
+              Dejaréis de compartir el fondo común. Podréis volver a vincularos más adelante si
+              queréis.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <AppButton mode="text" onPress={() => setUnlinkConfirmVisible(false)}>
+              Cancelar
+            </AppButton>
+            <AppButton
+              mode="contained"
+              loading={unlinkMutation.isPending}
+              onPress={() => unlinkMutation.mutate(linkQuery.data.linkId)}
+            >
+              Desvincular
+            </AppButton>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }

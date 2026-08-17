@@ -6,6 +6,7 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { Checkbox, HelperText, Text, TextInput } from 'react-native-paper';
 
 import { registerSchema } from '../../src/application/auth/registerSchema';
+import { normalizePhoneWithCountryCode } from '../../src/application/invitations/normalizePhoneWithCountryCode';
 import { AppButton } from '../../src/presentation/components/AppButton';
 import { KeyboardAwareScreen } from '../../src/presentation/components/KeyboardAwareScreen';
 import { useAuth } from '../../src/presentation/hooks/useAuth';
@@ -49,7 +50,13 @@ export default function RegisterScreen() {
   const onSubmit = async ({ confirmPassword: _confirmPassword, ...values }) => {
     setServerError(null);
     try {
-      const result = await register({ ...values, phone: values.phone || null });
+      // Mismo prefijo de país automático que al invitar a vincular cuenta
+      // (normalizePhoneWithCountryCode) — si el teléfono se guardara aquí
+      // "a pelo" (p. ej. "612345678") no coincidiría nunca con el número ya
+      // normalizado ("+34612345678") que usa quien te invite, y la
+      // invitación no te llegaría nunca, sin ningún error visible.
+      const phone = values.phone ? await normalizePhoneWithCountryCode(values.phone) : null;
+      const result = await register({ ...values, phone });
       if (result.needsEmailConfirmation) {
         setNeedsConfirmation(true);
       } else {
@@ -216,7 +223,10 @@ export default function RegisterScreen() {
         name="termsAccepted"
         render={({ field }) => (
           <View style={styles.termsRow}>
-            <Checkbox status={field.value ? 'checked' : 'unchecked'} onPress={() => field.onChange(!field.value)} />
+            <Checkbox
+              status={field.value ? 'checked' : 'unchecked'}
+              onPress={() => field.onChange(!field.value)}
+            />
             {/* Text anidado dentro de Text: cada trozo puede tener su
                 propio onPress, así que "términos" y "política de
                 privacidad" abren cada uno su propio enlace, sin que el
@@ -244,7 +254,12 @@ export default function RegisterScreen() {
         </HelperText>
       ) : null}
 
-      <AppButton mode="contained" onPress={handleSubmit(onSubmit)} loading={isSubmitting} style={styles.button}>
+      <AppButton
+        mode="contained"
+        onPress={handleSubmit(onSubmit)}
+        loading={isSubmitting}
+        style={styles.button}
+      >
         Registrarme
       </AppButton>
 

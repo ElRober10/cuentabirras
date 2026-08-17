@@ -6,6 +6,7 @@ import { Linking, StyleSheet, View } from 'react-native';
 import { Checkbox, HelperText, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
 
 import { createEditProfileSchema } from '../../../src/application/auth/editProfileSchema';
+import { normalizePhoneWithCountryCode } from '../../../src/application/invitations/normalizePhoneWithCountryCode';
 import { AppButton } from '../../../src/presentation/components/AppButton';
 import { KeyboardAwareScreen } from '../../../src/presentation/components/KeyboardAwareScreen';
 import { useAuth } from '../../../src/presentation/hooks/useAuth';
@@ -58,13 +59,24 @@ export default function EditProfileScreen() {
     setSaved(false);
     try {
       const acceptTerms = requireTerms && values.termsAccepted;
+      // Mismo prefijo de país automático que al invitar a vincular cuenta
+      // (normalizePhoneWithCountryCode) — si aquí se guardara "a pelo" (p.
+      // ej. "612345678") no coincidiría nunca con el número ya normalizado
+      // ("+34612345678") que usa quien te invite a vincular cuentas, y la
+      // invitación no te llegaría nunca, sin ningún error visible.
+      const phone = values.phone ? await normalizePhoneWithCountryCode(values.phone) : null;
       if (
         values.firstName !== user.firstName ||
         values.lastName !== user.lastName ||
-        (values.phone || null) !== (user.phone || null) ||
+        phone !== (user.phone || null) ||
         acceptTerms
       ) {
-        await updateProfile({ firstName: values.firstName, lastName: values.lastName, phone: values.phone || null, acceptTerms });
+        await updateProfile({
+          firstName: values.firstName,
+          lastName: values.lastName,
+          phone,
+          acceptTerms,
+        });
       }
 
       if (values.email !== user.email) {
@@ -96,8 +108,8 @@ export default function EditProfileScreen() {
 
       {emailChangePending ? (
         <Text style={[styles.emailNotice, { color: theme.colors.primary }]}>
-          Te hemos mandado un enlace de confirmación al nuevo email. Hasta que no lo confirmes, sigues entrando con
-          el actual.
+          Te hemos mandado un enlace de confirmación al nuevo email. Hasta que no lo confirmes,
+          sigues entrando con el actual.
         </Text>
       ) : null}
 
@@ -175,14 +187,20 @@ export default function EditProfileScreen() {
             name="termsAccepted"
             render={({ field }) => (
               <View style={styles.termsRow}>
-                <Checkbox status={field.value ? 'checked' : 'unchecked'} onPress={() => field.onChange(!field.value)} />
+                <Checkbox
+                  status={field.value ? 'checked' : 'unchecked'}
+                  onPress={() => field.onChange(!field.value)}
+                />
                 <Text style={styles.termsText} onPress={() => field.onChange(!field.value)}>
                   He leído y acepto los{' '}
                   <Text style={styles.termsLink} onPress={() => Linking.openURL(LEGAL_LINKS.terms)}>
                     términos y condiciones
                   </Text>{' '}
                   y la{' '}
-                  <Text style={styles.termsLink} onPress={() => Linking.openURL(LEGAL_LINKS.privacy)}>
+                  <Text
+                    style={styles.termsLink}
+                    onPress={() => Linking.openURL(LEGAL_LINKS.privacy)}
+                  >
                     política de privacidad
                   </Text>
                 </Text>
@@ -200,7 +218,9 @@ export default function EditProfileScreen() {
           <Text variant="titleMedium" style={styles.sectionTitle}>
             Cambiar contraseña
           </Text>
-          <Text style={{ color: theme.colors.onSurfaceVariant }}>Déjalo en blanco si no quieres cambiarla.</Text>
+          <Text style={{ color: theme.colors.onSurfaceVariant }}>
+            Déjalo en blanco si no quieres cambiarla.
+          </Text>
 
           <Controller
             control={control}
@@ -214,7 +234,10 @@ export default function EditProfileScreen() {
                 autoComplete="new-password"
                 textContentType="newPassword"
                 right={
-                  <TextInput.Icon icon={showPassword ? 'eye-off' : 'eye'} onPress={() => setShowPassword((v) => !v)} />
+                  <TextInput.Icon
+                    icon={showPassword ? 'eye-off' : 'eye'}
+                    onPress={() => setShowPassword((v) => !v)}
+                  />
                 }
                 error={!!errors.newPassword}
                 style={styles.input}
@@ -253,7 +276,12 @@ export default function EditProfileScreen() {
         </HelperText>
       ) : null}
 
-      <AppButton mode="contained" onPress={handleSubmit(onSubmit)} loading={isSubmitting} style={styles.button}>
+      <AppButton
+        mode="contained"
+        onPress={handleSubmit(onSubmit)}
+        loading={isSubmitting}
+        style={styles.button}
+      >
         Guardar cambios
       </AppButton>
 

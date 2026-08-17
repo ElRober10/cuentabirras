@@ -3,11 +3,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, FAB, Snackbar, Text, useTheme } from 'react-native-paper';
+import {
+  ActivityIndicator,
+  Dialog,
+  FAB,
+  Portal,
+  Snackbar,
+  Text,
+  useTheme,
+} from 'react-native-paper';
 
 import { listCatalogSortedByPopularity } from '../../../../../src/application/catalog/listCatalogSortedByPopularity';
 import { addDrinkToTab } from '../../../../../src/application/tabs/addDrinkToTab';
-import { computeTabTotalCents, hasMissingPrices } from '../../../../../src/application/tabs/computeTabTotal';
+import {
+  computeTabTotalCents,
+  hasMissingPrices,
+} from '../../../../../src/application/tabs/computeTabTotal';
 import { container } from '../../../../../src/di/container';
 import { AddDrinkModal } from '../../../../../src/presentation/components/AddDrinkModal';
 import { AppButton } from '../../../../../src/presentation/components/AppButton';
@@ -30,6 +41,7 @@ export default function TabScreen() {
   // añadir nada — "Añadir precio" o el lápiz). `quantity` solo se usa en 'add'.
   const [pricePrompt, setPricePrompt] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [unlinkConfirmVisible, setUnlinkConfirmVisible] = useState(false);
   // Un simple contador para darle un `token` distinto a cada apertura del
   // diálogo de precio (se usa como parte de su `key`, ver más abajo). No
   // usamos Date.now(): el compilador de React no permite llamar a
@@ -72,7 +84,10 @@ export default function TabScreen() {
 
   const unlinkMutation = useMutation({
     mutationFn: (linkId) => container.accountLinkRepository.unlink(linkId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['myAccountLink'] }),
+    onSuccess: () => {
+      setUnlinkConfirmVisible(false);
+      queryClient.invalidateQueries({ queryKey: ['myAccountLink'] });
+    },
     onError: (error) => setErrorMessage(error.message ?? 'No se pudo desvincular la cuenta.'),
   });
 
@@ -125,15 +140,28 @@ export default function TabScreen() {
       .filter(Boolean);
   }, [tabItemsQuery.data, catalogQuery.data, countsByItem]);
 
-  const totalCents = useMemo(() => computeTabTotalCents(tabItemsQuery.data ?? []), [tabItemsQuery.data]);
-  const missingPrices = useMemo(() => hasMissingPrices(tabItemsQuery.data ?? []), [tabItemsQuery.data]);
+  const totalCents = useMemo(
+    () => computeTabTotalCents(tabItemsQuery.data ?? []),
+    [tabItemsQuery.data],
+  );
+  const missingPrices = useMemo(
+    () => hasMissingPrices(tabItemsQuery.data ?? []),
+    [tabItemsQuery.data],
+  );
 
   // Añadir una bebida que YA estaba en el catálogo. `priceCentsOverride`
   // solo viene informado cuando el precio se acaba de poner/corregir en el
   // diálogo — en ese caso también hay que refrescar el catálogo.
   const addExistingMutation = useMutation({
     mutationFn: ({ item, quantity, priceCentsOverride, allowMissingPrice }) =>
-      addDrinkToTab({ tabId, barId, existingItem: item, quantity, priceCentsOverride, allowMissingPrice }),
+      addDrinkToTab({
+        tabId,
+        barId,
+        existingItem: item,
+        quantity,
+        priceCentsOverride,
+        allowMissingPrice,
+      }),
     onSuccess: (_result, variables) => {
       queryClient.invalidateQueries({ queryKey: ['tabItems', tabId] });
       queryClient.invalidateQueries({ queryKey: ['iconPopularity'] });
@@ -171,7 +199,8 @@ export default function TabScreen() {
   });
 
   const removeOneMutation = useMutation({
-    mutationFn: (catalogItemId) => container.tabItemRepository.removeOneUnit({ tabId, catalogItemId }),
+    mutationFn: (catalogItemId) =>
+      container.tabItemRepository.removeOneUnit({ tabId, catalogItemId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tabItems', tabId] });
       queryClient.invalidateQueries({ queryKey: ['iconPopularity'] });
@@ -222,7 +251,11 @@ export default function TabScreen() {
     if (pricePrompt.mode === 'edit') {
       updatePriceMutation.mutate({ catalogItemId: pricePrompt.item.id, priceCents });
     } else {
-      addExistingMutation.mutate({ item: pricePrompt.item, quantity: pricePrompt.quantity, priceCentsOverride: priceCents });
+      addExistingMutation.mutate({
+        item: pricePrompt.item,
+        quantity: pricePrompt.quantity,
+        priceCentsOverride: priceCents,
+      });
     }
     setPricePrompt(null);
   };
@@ -230,7 +263,11 @@ export default function TabScreen() {
   // "No sé el precio": añade igualmente, sin precio — solo tiene sentido en
   // modo 'add' (en 'edit' no hay nada que añadir, solo un precio que corregir).
   const handleSkipPrice = () => {
-    addExistingMutation.mutate({ item: pricePrompt.item, quantity: pricePrompt.quantity, allowMissingPrice: true });
+    addExistingMutation.mutate({
+      item: pricePrompt.item,
+      quantity: pricePrompt.quantity,
+      allowMissingPrice: true,
+    });
     setPricePrompt(null);
   };
 
@@ -272,11 +309,22 @@ export default function TabScreen() {
 
       {linkQuery.data ? (
         <View style={[styles.linkedBanner, { backgroundColor: theme.colors.primaryContainer }]}>
-          <MaterialCommunityIcons name="link-variant" size={16} color={theme.colors.onPrimaryContainer} />
-          <Text style={[styles.linkedBannerText, { color: theme.colors.onPrimaryContainer }]} numberOfLines={1}>
+          <MaterialCommunityIcons
+            name="link-variant"
+            size={16}
+            color={theme.colors.onPrimaryContainer}
+          />
+          <Text
+            style={[styles.linkedBannerText, { color: theme.colors.onPrimaryContainer }]}
+            numberOfLines={1}
+          >
             Vinculada con {linkQuery.data.partnerFirstName}
           </Text>
-          <Pressable onPress={() => unlinkMutation.mutate(linkQuery.data.linkId)} disabled={unlinkMutation.isPending} hitSlop={8}>
+          <Pressable
+            onPress={() => setUnlinkConfirmVisible(true)}
+            disabled={unlinkMutation.isPending}
+            hitSlop={8}
+          >
             <Text style={[styles.unlinkText, { color: theme.colors.onPrimaryContainer }]}>
               {unlinkMutation.isPending ? 'Desvinculando…' : 'Desvincular'}
             </Text>
@@ -302,7 +350,9 @@ export default function TabScreen() {
             />
           )}
           ListEmptyComponent={
-            <Text style={styles.empty}>Apunta lo que te tomes y yo llevo la cuenta. ¡Añade tu primera bebida con el botón +!</Text>
+            <Text style={styles.empty}>
+              Apunta lo que te tomes y yo llevo la cuenta. ¡Añade tu primera bebida con el botón +!
+            </Text>
           }
         />
       )}
@@ -331,7 +381,9 @@ export default function TabScreen() {
       />
 
       <SetPriceDialog
-        key={pricePrompt ? `set-price-${pricePrompt.item.id}-${pricePrompt.token}` : 'set-price-closed'}
+        key={
+          pricePrompt ? `set-price-${pricePrompt.item.id}-${pricePrompt.token}` : 'set-price-closed'
+        }
         visible={!!pricePrompt}
         drinkName={pricePrompt?.item?.name}
         initialPriceCents={pricePrompt?.mode === 'edit' ? pricePrompt.item.priceCents : null}
@@ -343,6 +395,30 @@ export default function TabScreen() {
       <Snackbar visible={!!errorMessage} onDismiss={() => setErrorMessage(null)} duration={4000}>
         {errorMessage}
       </Snackbar>
+
+      <Portal>
+        <Dialog visible={unlinkConfirmVisible} onDismiss={() => setUnlinkConfirmVisible(false)}>
+          <Dialog.Title>¿Desvincular cuenta?</Dialog.Title>
+          <Dialog.Content>
+            <Text>
+              Dejaréis de compartir el fondo común. Podréis volver a vincularos más adelante si
+              queréis.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <AppButton mode="text" onPress={() => setUnlinkConfirmVisible(false)}>
+              Cancelar
+            </AppButton>
+            <AppButton
+              mode="contained"
+              loading={unlinkMutation.isPending}
+              onPress={() => unlinkMutation.mutate(linkQuery.data.linkId)}
+            >
+              Desvincular
+            </AppButton>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }
