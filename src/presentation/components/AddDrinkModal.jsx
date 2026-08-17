@@ -1,7 +1,16 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { HelperText, IconButton, Modal, Portal, SegmentedButtons, Text, TextInput, useTheme } from 'react-native-paper';
+import { Image, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import {
+  HelperText,
+  IconButton,
+  Modal,
+  Portal,
+  SegmentedButtons,
+  Text,
+  TextInput,
+  useTheme,
+} from 'react-native-paper';
 
 import { DRINK_CATEGORIES, getDrinkCategory } from '../../shared/constants/drinkCategories';
 import { DRINK_ICONS, GENERIC_DRINK_ICON_IMAGE } from '../../shared/constants/drinkIcons';
@@ -12,10 +21,25 @@ import { AppButton } from './AppButton';
 // estos, deja que le ponga yo un nombre" dentro de este mismo selector.
 const OTHER_ICON = 'otro';
 
-// Tamaño "base" (scale 1) de cada icono — luego se multiplica por
-// icon.scale para que un botellín se vea más pequeño que una jarra grande.
-const TILE_BASE = { width: 56, height: 90 };
+// Quita tildes y pasa a minúsculas, para que buscar "cana" encuentre "Caña"
+// y dé igual cómo estén escritas mayúsculas/minúsculas en label/aliases.
+function normalizeForSearch(text) {
+  return text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+}
+
 const DETAIL_IMAGE_BASE = { width: 160, height: 260 };
+
+// La rejilla siempre tiene que caber en 4 columnas, sea cual sea el ancho
+// del móvil — por eso el tamaño de cada tarjeta no es un número fijo, se
+// calcula a partir del ancho real de pantalla (ver modal.margin/padding
+// más abajo, restados aquí para que el cálculo cuadre con el hueco
+// disponible de verdad).
+const GRID_COLUMNS = 4;
+const GRID_GAP = 8;
+const MODAL_HORIZONTAL_INSET = 2 * (24 + 20); // margin + padding del modal, a cada lado
 
 // Dos pasos para añadir una bebida nueva al catálogo del bar:
 // 1) Elegir un icono (una de las ilustraciones, filtradas por Bebida/Comida,
@@ -27,10 +51,29 @@ const DETAIL_IMAGE_BASE = { width: 160, height: 260 };
 // El componente se remonta entero cada vez que se abre (el padre le pasa un
 // `key` distinto) — así todo el estado interno empieza limpio sin
 // necesidad de resetearlo a mano con un efecto.
-export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPopularity, onSubmit, onSetPriceOnly }) {
+export function AddDrinkModal({
+  visible,
+  onDismiss,
+  existingCatalogItems,
+  iconPopularity,
+  onSubmit,
+  onSetPriceOnly,
+}) {
   const theme = useTheme();
+  const { width: windowWidth } = useWindowDimensions();
+
+  // Ancho de cada tarjeta para que siempre entren exactamente 4 por fila,
+  // en cualquier móvil. El "hueco de imagen" deja un pequeño margen
+  // (× 1.3) por encima del dibujo a escala 1 para que quepan sin recortarse
+  // las bebidas más grandes (jarra grande, scale 1.25).
+  const tileWidth =
+    (windowWidth - MODAL_HORIZONTAL_INSET - GRID_GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
+  const imageAreaSize = { width: tileWidth - 8, height: (tileWidth - 8) * 1.5 };
+  const tileBase = { width: imageAreaSize.width / 1.3, height: imageAreaSize.height / 1.3 };
+
   const [step, setStep] = useState('picker');
   const [categoryTab, setCategoryTab] = useState('bebida');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedIcon, setSelectedIcon] = useState(null);
   // Bebida "Otro" ya creada antes en este bar (nombre a mano, sin icono de
   // la lista) que el usuario elige directamente de la rejilla — distinto de
@@ -44,7 +87,10 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
   // luego lo que más pide todo el mundo en la app, y por último alfabético.
   const iconsInTab = useMemo(() => {
     const popularityByIcon = new Map(
-      (iconPopularity ?? []).map((row) => [row.icon, { mine: Number(row.my_quantity), total: Number(row.total_quantity) }]),
+      (iconPopularity ?? []).map((row) => [
+        row.icon,
+        { mine: Number(row.my_quantity), total: Number(row.total_quantity) },
+      ]),
     );
     return DRINK_ICONS.filter((icon) => icon.category === categoryTab).sort((a, b) => {
       const popA = popularityByIcon.get(a.value) ?? { mine: 0, total: 0 };
@@ -55,11 +101,28 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
     });
   }, [categoryTab, iconPopularity]);
 
-  const iconInfo = selectedIcon && selectedIcon !== OTHER_ICON ? DRINK_ICONS.find((i) => i.value === selectedIcon) : null;
+  // El buscador filtra en cada tecleo, por el nombre de la bebida o por
+  // cualquiera de sus `aliases` (ver drinkIcons.js) — así "cerveza" saca
+  // botellín/cañas/jarras/tercios/sin alcohol aunque ninguna se llame así.
+  const normalizedQuery = normalizeForSearch(searchQuery.trim());
+  const visibleIcons = useMemo(() => {
+    if (!normalizedQuery) return iconsInTab;
+    return iconsInTab.filter((icon) => {
+      const haystacks = [icon.label, ...(icon.aliases ?? [])];
+      return haystacks.some((text) => normalizeForSearch(text).includes(normalizedQuery));
+    });
+  }, [iconsInTab, normalizedQuery]);
+
+  const iconInfo =
+    selectedIcon && selectedIcon !== OTHER_ICON
+      ? DRINK_ICONS.find((i) => i.value === selectedIcon)
+      : null;
 
   // Si ya existe una bebida con este icono en el catálogo de este bar, se
   // reutiliza (con su precio, si lo tenía) en vez de crear una duplicada.
-  const existingItemFromIcon = iconInfo ? (existingCatalogItems ?? []).find((item) => item.icon === iconInfo.value) : null;
+  const existingItemFromIcon = iconInfo
+    ? (existingCatalogItems ?? []).find((item) => item.icon === iconInfo.value)
+    : null;
 
   // Bebidas "Otro" (nombre a mano, sin icono) que este bar ya tiene en su
   // catálogo — se ofrecen como tarjetas más en la rejilla, para no obligar
@@ -72,6 +135,12 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
         .sort((a, b) => a.name.localeCompare(b.name, 'es')),
     [existingCatalogItems, categoryTab],
   );
+  const visibleCustomItems = useMemo(() => {
+    if (!normalizedQuery) return customItemsInTab;
+    return customItemsInTab.filter((item) =>
+      normalizeForSearch(item.name).includes(normalizedQuery),
+    );
+  }, [customItemsInTab, normalizedQuery]);
 
   const customItemInfo = selectedCustomItemId
     ? (existingCatalogItems ?? []).find((item) => item.id === selectedCustomItemId)
@@ -96,7 +165,11 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
   // nombre es obligatorio y falta (caso "Otro"), devuelve null y ya deja
   // marcado el error en el propio campo.
   const buildDescriptor = () => {
-    const name = iconInfo ? iconInfo.label : customItemInfo ? customItemInfo.name : otherName.trim();
+    const name = iconInfo
+      ? iconInfo.label
+      : customItemInfo
+        ? customItemInfo.name
+        : otherName.trim();
     if (!iconInfo && !customItemInfo && name.length === 0) {
       setOtherNameError('Obligatorio');
       return null;
@@ -112,7 +185,9 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
     // chocaba con la que ya existía).
     const nameMatch =
       !iconInfo && !customItemInfo
-        ? (existingCatalogItems ?? []).find((item) => item.name.trim().toLowerCase() === name.toLowerCase())
+        ? (existingCatalogItems ?? []).find(
+            (item) => item.name.trim().toLowerCase() === name.toLowerCase(),
+          )
         : null;
 
     return {
@@ -151,48 +226,108 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
 
             {categoryTab === 'comida' ? (
               <View style={styles.underConstruction}>
-                <MaterialCommunityIcons name="hammer-wrench" size={40} color={theme.colors.onSurfaceVariant} />
+                <MaterialCommunityIcons
+                  name="hammer-wrench"
+                  size={40}
+                  color={theme.colors.onSurfaceVariant}
+                />
                 <Text style={styles.underConstructionText}>
                   Todavía no hay comidas — llegarán en una próxima versión de la app.
                 </Text>
               </View>
             ) : (
-              <ScrollView contentContainerStyle={styles.iconGrid}>
-                {iconsInTab.map((icon) => (
-                  <Pressable key={icon.value} onPress={() => handlePickIcon(icon.value)} style={styles.iconTile}>
-                    <Image
-                      source={icon.image}
-                      style={{ width: TILE_BASE.width * icon.scale, height: TILE_BASE.height * icon.scale }}
-                      resizeMode="contain"
-                    />
-                  </Pressable>
-                ))}
-                {customItemsInTab.map((item) => (
-                  <Pressable key={item.id} onPress={() => handlePickCustomItem(item)} style={styles.iconTile}>
-                    <Image source={GENERIC_DRINK_ICON_IMAGE} style={styles.customTileImage} resizeMode="contain" />
-                    <Text style={styles.otherLabel} numberOfLines={1}>
-                      {item.name}
+              <>
+                <TextInput
+                  mode="outlined"
+                  placeholder="Buscar bebida..."
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  left={<TextInput.Icon icon="magnify" />}
+                  right={
+                    searchQuery ? (
+                      <TextInput.Icon icon="close" onPress={() => setSearchQuery('')} />
+                    ) : null
+                  }
+                  dense
+                  style={styles.searchInput}
+                />
+                <ScrollView contentContainerStyle={styles.iconGrid}>
+                  {visibleIcons.map((icon) => (
+                    <Pressable
+                      key={icon.value}
+                      onPress={() => handlePickIcon(icon.value)}
+                      style={[styles.iconTile, { width: tileWidth }]}
+                    >
+                      <View style={[styles.iconImageArea, imageAreaSize]}>
+                        <Image
+                          source={icon.image}
+                          style={{
+                            width: tileBase.width * icon.scale,
+                            height: tileBase.height * icon.scale,
+                          }}
+                          resizeMode="contain"
+                        />
+                      </View>
+                      <Text style={styles.iconLabel} numberOfLines={2}>
+                        {icon.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                  {visibleCustomItems.map((item) => (
+                    <Pressable
+                      key={item.id}
+                      onPress={() => handlePickCustomItem(item)}
+                      style={[styles.iconTile, { width: tileWidth }]}
+                    >
+                      <View style={[styles.iconImageArea, imageAreaSize]}>
+                        <Image
+                          source={GENERIC_DRINK_ICON_IMAGE}
+                          style={{ width: tileBase.width, height: tileBase.height }}
+                          resizeMode="contain"
+                        />
+                      </View>
+                      <Text style={styles.iconLabel} numberOfLines={2}>
+                        {item.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+                  <Pressable
+                    onPress={() => handlePickIcon(OTHER_ICON)}
+                    style={[styles.iconTile, { width: tileWidth }]}
+                  >
+                    <View style={[styles.iconImageArea, imageAreaSize]}>
+                      <MaterialCommunityIcons
+                        name="dots-horizontal"
+                        size={28}
+                        color={theme.colors.onSurfaceVariant}
+                      />
+                    </View>
+                    <Text style={styles.iconLabel} numberOfLines={2}>
+                      Otro
                     </Text>
                   </Pressable>
-                ))}
-                <Pressable onPress={() => handlePickIcon(OTHER_ICON)} style={[styles.iconTile, styles.otherTile]}>
-                  <MaterialCommunityIcons name="dots-horizontal" size={28} color={theme.colors.onSurfaceVariant} />
-                  <Text style={styles.otherLabel}>Otro</Text>
-                </Pressable>
-              </ScrollView>
+                </ScrollView>
+              </>
             )}
 
             <SegmentedButtons
               value={categoryTab}
               onValueChange={setCategoryTab}
               style={styles.segmented}
-              buttons={DRINK_CATEGORIES.map((category) => ({ value: category.value, label: category.label }))}
+              buttons={DRINK_CATEGORIES.map((category) => ({
+                value: category.value,
+                label: category.label,
+              }))}
             />
           </>
         ) : (
           <>
             <View style={styles.detailHeader}>
-              <IconButton icon="arrow-left" onPress={() => setStep('picker')} style={styles.backButton} />
+              <IconButton
+                icon="arrow-left"
+                onPress={() => setStep('picker')}
+                style={styles.backButton}
+              />
               <Text variant="titleMedium">
                 {iconInfo ? iconInfo.label : customItemInfo ? customItemInfo.name : 'Bebida nueva'}
               </Text>
@@ -203,13 +338,22 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
                 source={iconInfo.image}
                 style={[
                   styles.detailImage,
-                  { width: DETAIL_IMAGE_BASE.width * iconInfo.scale, height: DETAIL_IMAGE_BASE.height * iconInfo.scale },
+                  {
+                    width: DETAIL_IMAGE_BASE.width * iconInfo.scale,
+                    height: DETAIL_IMAGE_BASE.height * iconInfo.scale,
+                  },
                 ]}
                 resizeMode="contain"
               />
             ) : customItemInfo ? (
-              <View style={[styles.customDetailIcon, { backgroundColor: theme.colors.surfaceVariant }]}>
-                <Image source={GENERIC_DRINK_ICON_IMAGE} style={styles.customDetailImage} resizeMode="contain" />
+              <View
+                style={[styles.customDetailIcon, { backgroundColor: theme.colors.surfaceVariant }]}
+              >
+                <Image
+                  source={GENERIC_DRINK_ICON_IMAGE}
+                  style={styles.customDetailImage}
+                  resizeMode="contain"
+                />
               </View>
             ) : (
               <>
@@ -252,7 +396,11 @@ export function AddDrinkModal({ visible, onDismiss, existingCatalogItems, iconPo
                 disabled={quantity <= 1}
               />
               <Text style={styles.quantity}>{quantity}</Text>
-              <IconButton icon="plus" mode="contained-tonal" onPress={() => setQuantity((q) => q + 1)} />
+              <IconButton
+                icon="plus"
+                mode="contained-tonal"
+                onPress={() => setQuantity((q) => q + 1)}
+              />
             </View>
 
             <AppButton mode="contained" onPress={handleConfirm} style={styles.submitButton}>
@@ -275,37 +423,42 @@ const styles = StyleSheet.create({
   title: {
     marginBottom: 12,
   },
+  searchInput: {
+    marginBottom: 10,
+  },
   iconGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'center',
-    gap: 10,
+    gap: GRID_GAP,
     paddingBottom: 4,
   },
-  // Todas las tarjetas miden IGUAL (para que la rejilla quede ordenada) —
-  // lo que cambia de tamaño según icon.scale es el propio dibujo de dentro
-  // (más pequeño para un botellín, más grande para una jarra grande),
-  // centrado dentro de este mismo hueco fijo.
+  // El ancho de cada tarjeta (para que siempre entren 4 por fila) se calcula
+  // en el componente (tileWidth) y se combina con este estilo base — igual
+  // que imageAreaSize con iconImageArea. Todas las tarjetas miden IGUAL
+  // (para que la rejilla quede ordenada); lo que cambia de tamaño según
+  // icon.scale es el propio dibujo de dentro (más pequeño para un botellín,
+  // más grande para una jarra grande), centrado dentro de este mismo hueco
+  // de imagen. El nombre va debajo, a ancho completo de la tarjeta, y puede
+  // ocupar hasta 2 líneas — nunca se corta con "...", para que se lea la
+  // bebida entera (importante sobre todo en las que comparten dibujo
+  // parecido, como las de una marca concreta).
   iconTile: {
-    width: 56,
-    height: 90,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#ccc',
     alignItems: 'center',
-    justifyContent: 'center',
   },
-  otherTile: {
+  iconImageArea: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  otherLabel: {
-    fontSize: 10,
+  iconLabel: {
+    fontSize: 11,
+    textAlign: 'center',
     marginTop: 2,
-  },
-  customTileImage: {
-    width: 28,
-    height: 28,
   },
   underConstruction: {
     alignItems: 'center',
