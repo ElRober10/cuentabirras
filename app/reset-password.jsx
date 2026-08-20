@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useURL } from 'expo-linking';
+import { useLinkingURL } from 'expo-linking';
 import { Link } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -46,7 +46,12 @@ function extractRecoveryParams(url) {
 // directamente en esta ruta, vía el esquema propio `cuentabirras://` (ver
 // app.json → expo.scheme).
 export default function ResetPasswordScreen() {
-  const url = useURL();
+  // useLinkingURL (no useURL, que está deprecado) lee el estado nativo de
+  // forma síncrona al montar. Con useURL, si la app ya estaba abierta de
+  // fondo al tocar el enlace, Expo Router consume el evento de deep link
+  // para navegar aquí ANTES de que este componente exista y se suscriba —
+  // "url" se quedaba en null para siempre y el spinner nunca avanzaba.
+  const url = useLinkingURL();
   const { establishRecoverySession, updatePassword, logout } = useAuth();
   // 'checking' (aún resolviendo la URL / validando el enlace) → 'ready'
   // (sesión de recuperación ok, mostramos el formulario) → 'done'. O
