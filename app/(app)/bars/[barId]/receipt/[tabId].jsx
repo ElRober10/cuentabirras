@@ -36,16 +36,23 @@ export default function ReceiptScreen() {
   // algún momento se añadió sin precio (o el precio cambió a mitad de
   // sesión), hay que sumar cada fila con SU propio precio, y marcar la
   // línea como incompleta si alguna de esas unidades no tenía.
+  // `unitPricesCents` guarda TODOS los precios distintos vistos en la
+  // línea (normalmente uno solo) — si cambió a media sesión no hay un
+  // "precio por unidad" único que enseñar, así que unitPriceCents se deja
+  // en null (el ticket sigue enseñando el subtotal, que sí es correcto).
   const lines = useMemo(() => {
     if (!tabItems || !catalogItems) return [];
     const totals = new Map();
     for (const item of tabItems) {
-      const current = totals.get(item.catalogItemId) ?? { quantity: 0, subtotalCents: 0, hasMissing: false };
+      const current =
+        totals.get(item.catalogItemId) ??
+        { quantity: 0, subtotalCents: 0, hasMissing: false, unitPricesCents: new Set() };
       current.quantity += item.quantity;
       if (item.priceCentsAtAdd == null) {
         current.hasMissing = true;
       } else {
         current.subtotalCents += item.priceCentsAtAdd * item.quantity;
+        current.unitPricesCents.add(item.priceCentsAtAdd);
       }
       totals.set(item.catalogItemId, current);
     }
@@ -53,6 +60,7 @@ export default function ReceiptScreen() {
       catalogItemId,
       name: catalogItems.find((c) => c.id === catalogItemId)?.name ?? 'Bebida',
       ...info,
+      unitPriceCents: info.unitPricesCents.size === 1 ? [...info.unitPricesCents][0] : null,
     }));
   }, [tabItems, catalogItems]);
 
@@ -85,9 +93,14 @@ export default function ReceiptScreen() {
           contentContainerStyle={styles.list}
           renderItem={({ item: line }) => (
             <View style={styles.line}>
-              <Text style={styles.lineName}>
-                {line.quantity}× {line.name}
-              </Text>
+              <View style={styles.lineTextBlock}>
+                <Text>
+                  {line.quantity}× {line.name}
+                </Text>
+                {!line.hasMissing && line.unitPriceCents != null ? (
+                  <Text style={styles.lineUnitPrice}>{centsToEuros(line.unitPriceCents)} €/ud.</Text>
+                ) : null}
+              </View>
               {line.hasMissing ? (
                 <Text style={[styles.linePrice, { color: theme.colors.error }]}>Sin precio</Text>
               ) : (
@@ -145,9 +158,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 6,
   },
-  lineName: {
+  lineTextBlock: {
     flex: 1,
     marginRight: 8,
+  },
+  lineUnitPrice: {
+    fontSize: 12,
+    opacity: 0.7,
+    marginTop: 2,
   },
   linePrice: {
     fontWeight: 'bold',
