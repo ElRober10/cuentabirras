@@ -5,13 +5,33 @@ import { Stack } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View, useColorScheme } from 'react-native';
 import { PaperProvider } from 'react-native-paper';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AdBanner } from '../src/presentation/components/AdBanner';
 import { UpdateAvailableDialog } from '../src/presentation/components/UpdateAvailableDialog';
 import { queryClient } from '../src/config/queryClient';
 import { useAppUpdateCheck } from '../src/presentation/hooks/useAppUpdateCheck';
 import { darkTheme, lightTheme } from '../src/presentation/theme/tokens';
+
+// Envuelve <Stack/> + <AdBanner/>, aparte de RootLayout, porque
+// useSafeAreaInsets() solo funciona dentro de un descendiente de
+// <SafeAreaProvider> — RootLayout es quien MONTA ese provider, así que el
+// hook no puede llamarse ahí mismo. paddingLeft/Right (no solo top/bottom)
+// hace falta para que ninguna pantalla quede tapada por los botones del
+// sistema cuando el móvil está en horizontal (el notch/la barra de gestos
+// se desplaza a un lado en vez de quedar arriba/abajo).
+function AppContent() {
+  const insets = useSafeAreaInsets();
+
+  return (
+    <View style={[styles.appContainer, { paddingLeft: insets.left, paddingRight: insets.right }]}>
+      <View style={styles.screenArea}>
+        <Stack screenOptions={{ headerShown: false }} />
+      </View>
+      <AdBanner />
+    </View>
+  );
+}
 
 // Nota sobre expo-router (el sistema de navegación): cada archivo dentro de
 // `app/` es una PANTALLA, y su ruta en el sistema de archivos ES la URL de
@@ -75,12 +95,7 @@ export default function RootLayout() {
               esta columna flex — así el hueco de abajo se reserva en TODAS
               las pantallas de golpe (el Stack solo ocupa lo que le queda),
               sin tener que tocar cada pantalla una a una. */}
-          <View style={styles.appContainer}>
-            <View style={styles.screenArea}>
-              <Stack screenOptions={{ headerShown: false }} />
-            </View>
-            <AdBanner />
-          </View>
+          <AppContent />
           <UpdateAvailableDialog
             updateInfo={updateDismissed ? null : updateInfo}
             onDismiss={() => setUpdateDismissed(true)}

@@ -63,7 +63,7 @@ export function BarListItem({ bar, photoUrl, isPhotoLoading, onPress, onRequestE
         </View>
 
         <View style={styles.info}>
-          <Text variant="titleMedium" numberOfLines={1}>
+          <Text variant="titleMedium" numberOfLines={2}>
             {bar.name}
           </Text>
           <Text style={{ color: theme.colors.primary }}>Entrar al bar</Text>

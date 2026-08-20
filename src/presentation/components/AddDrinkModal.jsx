@@ -11,6 +11,7 @@ import {
   TextInput,
   useTheme,
 } from 'react-native-paper';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DRINK_CATEGORIES, getDrinkCategory } from '../../shared/constants/drinkCategories';
 import { DRINK_ICONS, GENERIC_DRINK_ICON_IMAGE } from '../../shared/constants/drinkIcons';
@@ -32,14 +33,19 @@ function normalizeForSearch(text) {
 
 const DETAIL_IMAGE_BASE = { width: 160, height: 260 };
 
-// La rejilla siempre tiene que caber en 4 columnas, sea cual sea el ancho
-// del móvil — por eso el tamaño de cada tarjeta no es un número fijo, se
-// calcula a partir del ancho real de pantalla (ver modal.margin/padding
-// más abajo, restados aquí para que el cálculo cuadre con el hueco
-// disponible de verdad).
+// En vertical la rejilla tiene que caber en 4 columnas — por eso el tamaño
+// de cada tarjeta no es un número fijo, se calcula a partir del ancho real
+// de pantalla (ver modal.margin/padding más abajo, restados aquí para que
+// el cálculo cuadre con el hueco disponible de verdad). En horizontal NO
+// se reutilizan esas mismas 4 columnas (se verían gigantes, el ancho es
+// mucho mayor): se mantiene el tamaño de tarjeta de vertical y se calculan
+// más columnas para llenar el hueco, en vez de estirar 4 más grandes.
 const GRID_COLUMNS = 4;
 const GRID_GAP = 8;
-const MODAL_HORIZONTAL_INSET = 2 * (24 + 20); // margin + padding del modal, a cada lado
+// margin + padding FIJOS del modal, a cada lado — el hueco de más por el
+// área segura (insets.left/right, los botones del sistema en horizontal)
+// se suma aparte en el componente, porque varía según el móvil.
+const MODAL_BASE_INSET = 2 * (24 + 20);
 
 // Dos pasos para añadir una bebida nueva al catálogo del bar:
 // 1) Elegir un icono (una de las ilustraciones, filtradas por Bebida/Comida,
@@ -60,14 +66,31 @@ export function AddDrinkModal({
   onSetPriceOnly,
 }) {
   const theme = useTheme();
-  const { width: windowWidth } = useWindowDimensions();
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  // El Modal se pinta a través de un Portal (más abajo), que vive FUERA del
+  // árbol donde _layout.jsx ya reserva insets.left/right para el resto de
+  // la app — así que aquí hay que sumarlos aparte, o en horizontal el
+  // modal entero queda por debajo de los botones de navegación del móvil.
+  const insets = useSafeAreaInsets();
 
-  // Ancho de cada tarjeta para que siempre entren exactamente 4 por fila,
-  // en cualquier móvil. El "hueco de imagen" deja un pequeño margen
-  // (× 1.3) por encima del dibujo a escala 1 para que quepan sin recortarse
-  // las bebidas más grandes (jarra grande, scale 1.25).
-  const tileWidth =
-    (windowWidth - MODAL_HORIZONTAL_INSET - GRID_GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
+  // El lado CORTO del móvil es el mismo gire como gire (es su ancho real en
+  // vertical) — se usa como referencia para el tamaño "normal" de tarjeta,
+  // en vez del ancho de pantalla actual, que en horizontal es el lado largo
+  // y haría las tarjetas enormes si se repartiera igual en solo 4 columnas.
+  const shortSide = Math.min(windowWidth, windowHeight);
+  const referenceTileWidth =
+    (shortSide - MODAL_BASE_INSET - GRID_GAP * (GRID_COLUMNS - 1)) / GRID_COLUMNS;
+
+  // Con el tamaño de tarjeta ya fijado (referenceTileWidth), se calculan
+  // cuántas caben en el ancho REAL disponible ahora mismo — 4 en vertical
+  // (coincide con GRID_COLUMNS, sin cambios respecto a antes) y más en
+  // horizontal, en vez de estirar siempre las mismas 4.
+  const availableWidth = windowWidth - MODAL_BASE_INSET - insets.left - insets.right;
+  const columns = Math.max(
+    GRID_COLUMNS,
+    Math.floor((availableWidth + GRID_GAP) / (referenceTileWidth + GRID_GAP)),
+  );
+  const tileWidth = (availableWidth - GRID_GAP * (columns - 1)) / columns;
   const imageAreaSize = { width: tileWidth - 8, height: (tileWidth - 8) * 1.5 };
   const tileBase = { width: imageAreaSize.width / 1.3, height: imageAreaSize.height / 1.3 };
 
@@ -216,7 +239,14 @@ export function AddDrinkModal({
       <Modal
         visible={visible}
         onDismiss={onDismiss}
-        contentContainerStyle={[styles.modal, { backgroundColor: theme.colors.surface }]}
+        contentContainerStyle={[
+          styles.modal,
+          {
+            backgroundColor: theme.colors.surface,
+            marginLeft: 24 + insets.left,
+            marginRight: 24 + insets.right,
+          },
+        ]}
       >
         {step === 'picker' ? (
           <>
@@ -415,7 +445,10 @@ export function AddDrinkModal({
 
 const styles = StyleSheet.create({
   modal: {
-    margin: 24,
+    // Solo vertical aquí — marginLeft/marginRight se ponen en el propio
+    // <Modal> (más arriba), sumando los insets del área segura del móvil.
+    marginTop: 24,
+    marginBottom: 24,
     padding: 20,
     borderRadius: 16,
     maxHeight: '85%',
@@ -456,7 +489,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconLabel: {
-    fontSize: 11,
+    fontSize: 13,
     textAlign: 'center',
     marginTop: 2,
   },
@@ -506,7 +539,7 @@ const styles = StyleSheet.create({
   },
   priceText: {
     textAlign: 'center',
-    fontSize: 18,
+    fontSize: 20,
     marginTop: 12,
     marginBottom: 8,
   },
@@ -527,7 +560,7 @@ const styles = StyleSheet.create({
   quantity: {
     minWidth: 28,
     textAlign: 'center',
-    fontSize: 18,
+    fontSize: 20,
   },
   submitButton: {
     marginTop: 12,

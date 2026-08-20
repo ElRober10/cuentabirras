@@ -4,7 +4,7 @@
     "slug": "CuentaBirras",
     "version": "1.0.0",
     "scheme": "cuentabirras",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
