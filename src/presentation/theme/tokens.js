@@ -30,7 +30,16 @@ const amber = {
 // conservando el tamaño/grosor propio de cada uno — así "Metal Mania" se
 // aplica en toda la app (títulos, botones...) sin tener que ir variante por
 // variante.
-const baseFonts = configureFonts({ config: { fontFamily: 'MetalMania_400Regular' } });
+const rawFonts = configureFonts({ config: { fontFamily: 'MetalMania_400Regular' } });
+
+// +2px en el tamaño de TODAS las variantes tipográficas (títulos, cuerpo,
+// etiquetas...) sin tocar cada pantalla una por una.
+const baseFonts = Object.fromEntries(
+  Object.entries(rawFonts).map(([variant, style]) => [
+    variant,
+    { ...style, fontSize: style.fontSize + 2 },
+  ])
+);
 
 // Metal Mania es decorativa y casi todo mayúsculas — perfecta para títulos,
 // pero en los campos de texto (lo que escribes, y su etiqueta) hace

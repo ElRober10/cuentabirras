@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   unitNumber: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     opacity: 0.7,
     marginTop: 2,

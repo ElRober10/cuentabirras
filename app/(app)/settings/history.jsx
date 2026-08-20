@@ -146,7 +146,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   statusBadge: {
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: 'bold',
     marginTop: 2,
   },

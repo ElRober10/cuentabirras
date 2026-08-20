@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   menuOptionText: {
-    fontSize: 16,
+    fontSize: 18,
   },
   uploadingRow: {
     flexDirection: 'row',

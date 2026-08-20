@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'MetalMania_400Regular',
-    fontSize: 32,
+    fontSize: 34,
   },
   // fontFamily explícito porque usa variant="bodyLarge", y esa variante
   // ahora es fuente de sistema (ver theme/tokens.js) para que los INPUT se

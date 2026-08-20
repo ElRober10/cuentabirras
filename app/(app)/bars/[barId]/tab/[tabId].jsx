@@ -441,7 +441,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   missingPricesWarning: {
-    fontSize: 15,
+    fontSize: 17,
     marginTop: 2,
   },
   linkedBanner: {
@@ -456,10 +456,10 @@ const styles = StyleSheet.create({
   },
   linkedBannerText: {
     flex: 1,
-    fontSize: 13,
+    fontSize: 15,
   },
   unlinkText: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: 'bold',
     textDecorationLine: 'underline',
   },

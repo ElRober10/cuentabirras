@@ -189,7 +189,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   suggestionsTitle: {
-    fontSize: 12,
+    fontSize: 14,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     paddingHorizontal: 16,

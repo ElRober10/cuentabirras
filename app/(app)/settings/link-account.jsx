@@ -396,7 +396,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   expiry: {
-    fontSize: 13,
+    fontSize: 15,
     marginTop: 8,
   },
   stretchButton: {
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     marginBottom: 20,
-    fontSize: 13,
+    fontSize: 15,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },

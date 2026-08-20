@@ -203,7 +203,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   brandTitle: {
     fontFamily: 'MetalMania_400Regular',
-    fontSize: 32,
+    fontSize: 34,
   },
   input: {
     marginTop: 8,
