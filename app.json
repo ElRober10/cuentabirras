@@ -53,8 +53,16 @@
         }
       ],
       "expo-notifications",
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {
+          "ios": {
+            "disableSPM": true
+          }
+        }
+      ],
       "@react-native-firebase/analytics",
+      "./plugins/withUseModularHeaders.js",
       [
         "react-native-google-mobile-ads",
         {

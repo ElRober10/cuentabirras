@@ -300,7 +300,7 @@ export const DRINK_ICONS = [
     alcohol: false,
     ml: 500,
     scale: 0.85,
-    image: require('../../../assets/drinks/botella-agua-pequeña.png'),
+    image: require('../../../assets/drinks/botella-agua-pequena.png'),
   },
   {
     value: 'botella-agua-grande',
