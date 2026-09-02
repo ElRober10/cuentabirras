@@ -1,7 +1,9 @@
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
 import { LEGAL_LINKS } from '../../../shared/constants/legalLinks';
+import { generateRawNonce, hashNonce } from '../../../shared/utils/appleNonce';
 import { supabase } from '../client';
 
 // auth.users (la tabla interna de Supabase con email/contraseña) no tiene
@@ -130,6 +132,61 @@ export const supabaseAuthRepository = {
     if (sessionError) throw sessionError;
 
     return fetchProfile(sessionData.session.user.id);
+  },
+
+  // Se llama desde app/(auth)/login.jsx, SOLO en iOS (la pantalla oculta el
+  // botón en Android). A diferencia de Google, no hace falta abrir un
+  // navegador: expo-apple-authentication da un identityToken nativo que
+  // Supabase canjea directamente con signInWithIdToken.
+  async signInWithApple() {
+    const rawNonce = generateRawNonce();
+    const hashedNonce = await hashNonce(rawNonce);
+
+    let credential;
+    try {
+      credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      });
+    } catch (error) {
+      if (error.code === 'ERR_REQUEST_CANCELED') {
+        throw new Error('Inicio de sesión con Apple cancelado.');
+      }
+      throw error;
+    }
+
+    if (!credential.identityToken) {
+      throw new Error('No se pudo completar el inicio de sesión con Apple.');
+    }
+
+    // A Supabase se le pasa el nonce EN CLARO (ver appleNonce.js).
+    const { data, error } = await supabase.auth.signInWithIdToken({
+      provider: 'apple',
+      token: credential.identityToken,
+      nonce: rawNonce,
+    });
+    if (error) throw error;
+
+    let profile = await fetchProfile(data.user.id);
+
+    // Apple solo manda el nombre en el PRIMER login, y casi nunca dentro del
+    // token — llega aquí, en `credential.fullName`. Si lo tenemos y el perfil
+    // aún está vacío, lo guardamos ahora (si no, se quedaría sin nombre hasta
+    // que el usuario lo pusiera a mano en "Editar datos personales").
+    const givenName = credential.fullName?.givenName?.trim();
+    const familyName = credential.fullName?.familyName?.trim();
+    if ((givenName || familyName) && !profile.firstName && !profile.lastName) {
+      profile = await supabaseAuthRepository.updateProfile({
+        firstName: givenName ?? '',
+        lastName: familyName ?? '',
+        phone: profile.phone ?? null,
+      });
+    }
+
+    return profile;
   },
 
   async signOut() {
