@@ -10,7 +10,8 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.elrober10.cuentabirras",
-      "googleServicesFile": "./GoogleService-Info.plist"
+      "googleServicesFile": "./GoogleService-Info.plist",
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.elrober10.cuentabirras",
@@ -31,6 +32,7 @@
       "expo-router",
       "expo-secure-store",
       "expo-web-browser",
+      "expo-apple-authentication",
       "expo-font",
       [
         "expo-image-picker",
