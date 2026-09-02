@@ -1,0 +1,10 @@
+{
+  "react-native": {
+    "analytics_auto_collection_enabled": true,
+    "analytics_idfv_collection_enabled": true,
+    "google_analytics_adid_collection_enabled": false,
+    "google_analytics_ssaid_collection_enabled": false,
+    "google_analytics_registration_with_ad_network_enabled": false,
+    "analytics_registration_with_ad_network_enabled": false
+  }
+}
