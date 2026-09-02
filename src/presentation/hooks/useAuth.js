@@ -61,6 +61,12 @@ export function useAuth() {
     return nextUser;
   }, [setUser]);
 
+  const loginWithApple = useCallback(async () => {
+    const nextUser = await container.authRepository.signInWithApple();
+    setUser(nextUser);
+    return nextUser;
+  }, [setUser]);
+
   const logout = useCallback(async () => {
     await container.authRepository.signOut();
     clearUser();
@@ -114,6 +120,7 @@ export function useAuth() {
     register,
     login,
     loginWithGoogle,
+    loginWithApple,
     logout,
     requestPasswordReset,
     establishRecoverySession,

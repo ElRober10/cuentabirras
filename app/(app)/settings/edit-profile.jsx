@@ -32,9 +32,10 @@ export default function EditProfileScreen() {
   // registro normal — mientras no la acepten, esta pantalla también la
   // exige (createEditProfileSchema recibe este booleano justamente por eso).
   const requireTerms = !user?.termsAcceptedAt;
-  // Una cuenta de Google nunca tuvo contraseña propia (el login es siempre
-  // vía Google) — ofrecer "cambiar contraseña" ahí no tendría sentido.
-  const isGoogleAccount = user?.authProvider === 'google';
+  // Ni las cuentas de Google ni las de Apple tuvieron nunca contraseña propia
+  // (el login es siempre por el proveedor) — ofrecer "cambiar contraseña" ahí
+  // no tendría sentido.
+  const isOAuthAccount = user?.authProvider === 'google' || user?.authProvider === 'apple';
 
   const {
     control,
@@ -213,7 +214,7 @@ export default function EditProfileScreen() {
         </>
       ) : null}
 
-      {isGoogleAccount ? null : (
+      {isOAuthAccount ? null : (
         <>
           <Text variant="titleMedium" style={styles.sectionTitle}>
             Cambiar contraseña

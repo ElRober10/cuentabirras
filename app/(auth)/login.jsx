@@ -1,8 +1,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
+import * as AppleAuthentication from 'expo-apple-authentication';
 import { Link, router } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 import { HelperText, Switch, Text, TextInput } from 'react-native-paper';
 
 import { loginSchema } from '../../src/application/auth/loginSchema';
@@ -15,7 +16,7 @@ import { useAuth } from '../../src/presentation/hooks/useAuth';
 // el formulario (qué hay escrito, qué campos tienen error) y "zod" (a
 // través de loginSchema) para validar antes de enviar.
 export default function LoginScreen() {
-  const { login, loginWithGoogle } = useAuth();
+  const { login, loginWithGoogle, loginWithApple } = useAuth();
   // serverError: para errores que vienen de Supabase (p. ej. "contraseña
   // incorrecta"), distintos de los errores de validación de zod (que
   // gestiona react-hook-form en `errors`).
@@ -23,6 +24,11 @@ export default function LoginScreen() {
   const [showPassword, setShowPassword] = useState(false);
   const [biometricSupported, setBiometricSupported] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
+  const [isAppleLoading, setIsAppleLoading] = useState(false);
+  // El botón de Apple solo se enseña en iOS y solo si el dispositivo lo
+  // soporta (guideline 4.8: hace falta un login alternativo a Google, y ese
+  // requisito solo aplica donde hay login de terceros — en Android da igual).
+  const [appleAuthAvailable, setAppleAuthAvailable] = useState(false);
   // Por defecto activado si el móvil lo soporta: como todo este interruptor
   // existe para "entrar rápido la próxima vez", lo más cómodo es que venga
   // ya marcado y el usuario lo desmarque si no lo quiere.
@@ -30,6 +36,11 @@ export default function LoginScreen() {
 
   useEffect(() => {
     biometricAuth.isSupported().then(setBiometricSupported);
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    AppleAuthentication.isAvailableAsync().then(setAppleAuthAvailable);
   }, []);
 
   // useForm es el "cerebro" del formulario: `control` conecta cada campo,
@@ -75,6 +86,22 @@ export default function LoginScreen() {
       setServerError(error.message);
     } finally {
       setIsGoogleLoading(false);
+    }
+  };
+
+  // Mismo criterio que Google: Apple tampoco da teléfono ni pasa por la
+  // casilla de términos, así que si a la vuelta el perfil no los tiene, se
+  // manda a completarlo en vez de entrar directo.
+  const handleAppleLogin = async () => {
+    setServerError(null);
+    setIsAppleLoading(true);
+    try {
+      const user = await loginWithApple();
+      router.replace(user.termsAcceptedAt ? '/(app)' : '/settings/edit-profile');
+    } catch (error) {
+      setServerError(error.message);
+    } finally {
+      setIsAppleLoading(false);
     }
   };
 
@@ -169,7 +196,7 @@ export default function LoginScreen() {
         mode="contained"
         onPress={handleSubmit(onSubmit)}
         loading={isSubmitting}
-        disabled={isGoogleLoading}
+        disabled={isGoogleLoading || isAppleLoading}
         style={styles.button}
       >
         Entrar
@@ -182,10 +209,22 @@ export default function LoginScreen() {
         icon="google"
         onPress={handleGoogleLogin}
         loading={isGoogleLoading}
-        disabled={isSubmitting}
+        disabled={isSubmitting || isAppleLoading}
       >
         Continuar con Google
       </AppButton>
+
+      {/* Componente oficial de Apple (su aspecto es obligatorio). Solo se
+          monta si appleAuthAvailable (iOS + soportado). */}
+      {appleAuthAvailable ? (
+        <AppleAuthentication.AppleAuthenticationButton
+          buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+          buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+          cornerRadius={20}
+          style={styles.appleButton}
+          onPress={handleAppleLogin}
+        />
+      ) : null}
 
       {/* <Link asChild><AppButton>...</AppButton></Link>: expo-router "inyecta"
           la navegación directamente en el AppButton (en vez de renderizar un
@@ -228,6 +267,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 16,
     marginBottom: 4,
+  },
+  appleButton: {
+    height: 44,
+    marginTop: 16,
   },
   link: {
     marginTop: 16,
