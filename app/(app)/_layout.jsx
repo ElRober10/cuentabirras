@@ -206,10 +206,13 @@ export default function AppLayout() {
         <Stack.Screen name="bars/[barId]/settings" options={{ headerShown: true, title: 'Precios del bar' }} />
         <Stack.Screen name="settings/index" options={{ headerShown: true, title: 'Ajustes' }} />
         <Stack.Screen name="settings/edit-profile" options={{ headerShown: true, title: 'Editar datos personales' }} />
+        <Stack.Screen name="settings/delete-account" options={{ headerShown: true, title: 'Borrar mi cuenta' }} />
         <Stack.Screen name="settings/link-account" options={{ headerShown: true, title: 'Vincular cuenta' }} />
         <Stack.Screen name="settings/history" options={{ headerShown: true, title: 'Histórico de cuentas' }} />
         <Stack.Screen name="settings/admin" options={{ headerShown: true, title: 'Panel de administración' }} />
         <Stack.Screen name="settings/admin-icon-requests" options={{ headerShown: true, title: 'Solicitudes de icono' }} />
+        <Stack.Screen name="settings/admin-bars-location" options={{ headerShown: true, title: 'Bares por ubicación' }} />
+        <Stack.Screen name="settings/admin-drink-ranking" options={{ headerShown: true, title: 'Ranking de bebidas' }} />
       </Stack>
 
       <PendingLinkInvitationDialog

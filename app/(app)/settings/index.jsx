@@ -115,6 +115,22 @@ export default function SettingsScreen() {
           <MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.onSurfaceVariant} />
         </Pressable>
       ) : null}
+
+      <Pressable
+        onPress={() => router.push('/settings/delete-account')}
+        style={[styles.option, { borderColor: theme.colors.outlineVariant }]}
+      >
+        <MaterialCommunityIcons name="account-remove-outline" size={26} color={theme.colors.error} />
+        <View style={styles.optionText}>
+          <Text variant="titleMedium" style={{ color: theme.colors.error }}>
+            Borrar mi cuenta
+          </Text>
+          <Text style={{ color: theme.colors.onSurfaceVariant }}>
+            Elimina tu cuenta y tus datos de forma permanente
+          </Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.onSurfaceVariant} />
+      </Pressable>
     </View>
   );
 }
