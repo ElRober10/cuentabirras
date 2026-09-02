@@ -11,7 +11,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.elrober10.cuentabirras",
       "googleServicesFile": "./GoogleService-Info.plist",
-      "usesAppleSignIn": true
+      "usesAppleSignIn": true,
+      "buildNumber": "13"
     },
     "android": {
       "package": "com.elrober10.cuentabirras",
