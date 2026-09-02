@@ -40,7 +40,7 @@ export default function ReceiptScreen() {
   // línea (normalmente uno solo) — si cambió a media sesión no hay un
   // "precio por unidad" único que enseñar, así que unitPriceCents se deja
   // en null (el ticket sigue enseñando el subtotal, que sí es correcto).
-  const lines = useMemo(() => {
+  const lines = useMemo(() => { 
     if (!tabItems || !catalogItems) return [];
     const totals = new Map();
     for (const item of tabItems) {

@@ -34,4 +34,23 @@ export const supabaseAdminRepository = {
     if (error) throw error;
     return Number(data);
   },
+
+  async getBarsByLocation() {
+    const { data, error } = await supabase.rpc('get_admin_bars_by_location');
+    if (error) throw error;
+    return data.map((row) => ({
+      hasLocation: row.has_location,
+      country: row.country,
+      region: row.region,
+      province: row.province,
+      city: row.city,
+      barCount: Number(row.bar_count),
+    }));
+  },
+
+  async getDrinkRanking() {
+    const { data, error } = await supabase.rpc('get_admin_drink_ranking');
+    if (error) throw error;
+    return data.map((row) => ({ name: row.name, totalCount: Number(row.total_count) }));
+  },
 };

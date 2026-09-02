@@ -47,3 +47,6 @@ tsconfig.json
 # Supabase CLI: estado local de `supabase link`/`functions deploy` (id de
 # proyecto, versiones...) — nada de esto es del código del proyecto en sí.
 supabase/.temp/
+
+# VS Code transient RN cache
+.vscode/.react/

@@ -16,10 +16,24 @@
  * @property {string} name - Nombre tal cual lo escribió quien creó la bebida (coincidencia exacta, sin normalizar mayúsculas/acentos).
  * @property {number} pendingCount - Cuántas filas de catalog_items (en todos los bares) tienen ese nombre y siguen sin icono.
  *
+ * @typedef {Object} BarLocationCount
+ * @property {boolean} hasLocation - false si el bar se creó sin permiso de ubicación (queda privado, sin coordenadas) — en ese caso country/region/province/city son null.
+ * @property {string|null} country
+ * @property {string|null} region - Comunidad autónoma (o el equivalente que devuelva la geocodificación fuera de España); null si la geocodificación aún no ha terminado o no encontró nada.
+ * @property {string|null} province
+ * @property {string|null} city
+ * @property {number} barCount - Bares que caen exactamente en esa combinación de país/región/provincia/ciudad.
+ *
+ * @typedef {Object} DrinkRankingEntry
+ * @property {string} name - Nombre de la bebida (agrupado por nombre en TODA la app, no por bar).
+ * @property {number} totalCount - Unidades pedidas en total. Nunca 0 (las bebidas sin ningún pedido no aparecen).
+ *
  * @typedef {Object} IAdminRepository
  * @property {() => Promise<AdminDashboardStats>} getDashboardStats - Cifras generales de toda la app. Lanza si quien llama no es admin (lo comprueba el propio RPC, no confíes solo en que la pantalla no se enseñe).
  * @property {() => Promise<PendingIconRequest[]>} getPendingIconRequests - Bebidas "Otro" sin icono, agrupadas por nombre y ordenadas por cuántas hay pendientes (la más pedida primero).
  * @property {(params: {name: string, icon: string}) => Promise<number>} applyIconToPendingDrinks - Asigna `icon` a todas las catalog_items pendientes con ese `name` exacto (en todos los bares). Devuelve cuántas filas se actualizaron.
+ * @property {() => Promise<BarLocationCount[]>} getBarsByLocation - Desglose de bares por ubicación, ya agregado en el RPC (una fila por cada combinación distinta de país/región/provincia/ciudad, con su recuento) — la pantalla decide qué nivel enseñar y va sumando barCount según haga falta.
+ * @property {() => Promise<DrinkRankingEntry[]>} getDrinkRanking - Ranking completo de bebidas más pedidas de toda la app, ya ordenado de más a menos pedida.
  */
 
 export {};
