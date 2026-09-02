@@ -26,6 +26,7 @@
  * @property {(token: string) => Promise<void>} updatePushToken - guarda el token de notificaciones push de Expo de este dispositivo en profiles.push_token (Fase D2), para que se le puedan mandar avisos.
  * @property {(params: {firstName: string, lastName: string, phone: string|null, acceptTerms?: boolean}) => Promise<UserProfile>} updateProfile - Edita nombre/apellidos/teléfono (pantalla "Editar datos personales"). Update directo sobre profiles, no toca auth.users ni el email — eso es cosa de updateEmail. `acceptTerms: true` marca términos aceptados AHORA (para cuentas creadas con Google, que nunca pasaron por la casilla del registro) — nunca se manda `false`, no hay forma de "desaceptar".
  * @property {(newEmail: string) => Promise<void>} updateEmail - Pide a Supabase el cambio de email de ACCESO. Ojo: no cambia nada al momento — Supabase manda un enlace de confirmación a la dirección nueva, y hasta que no se confirma, sigues entrando con la actual. profiles.email se sincroniza solo, vía trigger (migración 0028), en cuanto se confirma.
+ * @property {() => Promise<void>} deleteAccount - Borra la cuenta del usuario autenticado y todos sus datos personales de forma inmediata y permanente (RPC delete_own_account + signOut local). Las aportaciones al catálogo colaborativo de precios se conservan anonimizadas. Tras llamarla no hay sesión: el llamador debe navegar al login.
  */
 
 export {};

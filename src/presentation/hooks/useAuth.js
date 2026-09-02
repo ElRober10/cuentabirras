@@ -99,6 +99,14 @@ export function useAuth() {
     await container.authRepository.updateEmail(newEmail);
   }, []);
 
+  // Se usa desde settings/delete-account.jsx. El repo ya hace signOut, que
+  // dispararía onAuthStateChange -> clearUser solo; lo llamamos también aquí
+  // a mano para que el store quede vacío de inmediato, sin esperar al evento.
+  const deleteAccount = useCallback(async () => {
+    await container.authRepository.deleteAccount();
+    clearUser();
+  }, [clearUser]);
+
   // Esto es lo que reciben las pantallas al hacer useAuth().
   return {
     user,
@@ -112,5 +120,6 @@ export function useAuth() {
     updatePassword,
     updateProfile,
     updateEmail,
+    deleteAccount,
   };
 }

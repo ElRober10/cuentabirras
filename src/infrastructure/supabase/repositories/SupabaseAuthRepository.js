@@ -260,4 +260,15 @@ export const supabaseAuthRepository = {
     const { error } = await supabase.auth.updateUser({ email: newEmail }, { emailRedirectTo: redirectTo });
     if (error) throw error;
   },
+
+  // Se llama desde app/(app)/settings/delete-account.jsx. El RPC
+  // delete_own_account (migración 0039) hace el borrado entero en el
+  // servidor (incluida la fila de auth.users). Después ya no hay usuario, pero el
+  // token sigue en el almacenamiento local del dispositivo: signOut lo
+  // limpia para que onAuthStateChange dispare y la app mande al login.
+  async deleteAccount() {
+    const { error } = await supabase.rpc('delete_own_account');
+    if (error) throw error;
+    await supabase.auth.signOut();
+  },
 };
