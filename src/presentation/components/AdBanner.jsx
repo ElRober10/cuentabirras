@@ -87,6 +87,11 @@ export function AdBanner() {
       <BannerAd
         unitId={BANNER_AD_UNIT_ID}
         size={BannerAdSize.BANNER}
+        // La app no pide permiso de tracking (ATT) y declara "no tracking" en
+        // App Store Connect: por coherencia, nunca se piden anuncios
+        // personalizados, ni en iOS ni en Android. El consentimiento GDPR de
+        // Google (AdsConsent, arriba) es aparte y sí se mantiene.
+        requestOptions={{ requestNonPersonalizedAdsOnly: true }}
         onAdFailedToLoad={(error) => console.warn('El anuncio no se pudo cargar:', error)}
       />
     </View>
