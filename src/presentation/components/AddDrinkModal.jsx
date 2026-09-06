@@ -1,6 +1,15 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { Image, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native';
+import {
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import {
   HelperText,
   IconButton,
@@ -236,6 +245,10 @@ export function AddDrinkModal({
 
   return (
     <Portal>
+      {/* KeyboardAvoidingView: sin esto, al elegir "Otro" el teclado (por el
+          autoFocus del campo "Nombre" de abajo) tapaba el propio campo —
+          este Modal de Paper no evita el teclado por su cuenta. */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <Modal
         visible={visible}
         onDismiss={onDismiss}
@@ -439,6 +452,7 @@ export function AddDrinkModal({
           </>
         )}
       </Modal>
+      </KeyboardAvoidingView>
     </Portal>
   );
 }

@@ -20,6 +20,7 @@ import { sendLinkInvitationByEmail } from '../../../src/application/invitations/
 import { sendLinkInvitationByPhone } from '../../../src/application/invitations/sendLinkInvitationByPhone';
 import { container } from '../../../src/di/container';
 import { AppButton } from '../../../src/presentation/components/AppButton';
+import { KeyboardAwareScreen } from '../../../src/presentation/components/KeyboardAwareScreen';
 import { LinkedAccountBanner } from '../../../src/presentation/components/LinkedAccountBanner';
 import { usePendingLinkInvitations } from '../../../src/presentation/hooks/usePendingLinkInvitations';
 
@@ -121,7 +122,9 @@ export default function LinkAccountScreen() {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    // KeyboardAwareScreen (no un View suelto): el campo "Invitar por email"
+    // queda a media pantalla, y sin esto el teclado se lo tapaba al abrirse.
+    <KeyboardAwareScreen contentContainerStyle={styles.content}>
       {linkQuery.data ? (
         <LinkedAccountBanner
           link={linkQuery.data}
@@ -350,7 +353,7 @@ export default function LinkAccountScreen() {
           </Dialog.Actions>
         </Dialog>
       </Portal>
-    </View>
+    </KeyboardAwareScreen>
   );
 }
 
@@ -364,8 +367,12 @@ function formatDateTime(isoString) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  // justifyContent 'flex-start' (no el 'center' por defecto de
+  // KeyboardAwareScreen): esta pantalla es una lista de opciones de arriba
+  // a abajo, no un formulario centrado como login/register.
+  content: {
+    flexGrow: 1,
+    justifyContent: 'flex-start',
     padding: 16,
   },
   spinner: {

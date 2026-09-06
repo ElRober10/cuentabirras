@@ -206,6 +206,7 @@ export default function AppLayout() {
         <Stack.Screen name="bars/[barId]/settings" options={{ headerShown: true, title: 'Precios del bar' }} />
         <Stack.Screen name="settings/index" options={{ headerShown: true, title: 'Ajustes' }} />
         <Stack.Screen name="settings/edit-profile" options={{ headerShown: true, title: 'Editar datos personales' }} />
+        <Stack.Screen name="settings/accept-terms" options={{ headerShown: false }} />
         <Stack.Screen name="settings/delete-account" options={{ headerShown: true, title: 'Borrar mi cuenta' }} />
         <Stack.Screen name="settings/link-account" options={{ headerShown: true, title: 'Vincular cuenta' }} />
         <Stack.Screen name="settings/history" options={{ headerShown: true, title: 'Histórico de cuentas' }} />

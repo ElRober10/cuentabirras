@@ -20,8 +20,6 @@ import { AppButton } from '../../src/presentation/components/AppButton';
 import { BarListItem } from '../../src/presentation/components/BarListItem';
 import { useAuth } from '../../src/presentation/hooks/useAuth';
 
-const PAGE_SIZE = 5;
-
 // Arranca los 3 bucles de la animación del logo (ver HomeScreen más abajo).
 // Está fuera del componente (recibe los shared values ya creados, en vez de
 // crearlos aquí) para que la asignación `algo.value = ...` no quede en el
@@ -69,7 +67,6 @@ export default function HomeScreen() {
   // móvil en concreto (varía de un modelo a otro). Sumamos un poco más (16)
   // para que quede un pequeño margen de respiro, no justo pegado.
   const insets = useSafeAreaInsets();
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   // Bar pendiente de confirmar su eliminación (o null si no hay ningún
   // diálogo abierto ahora mismo).
   const [barPendingRemoval, setBarPendingRemoval] = useState(null);
@@ -93,9 +90,6 @@ export default function HomeScreen() {
     queryFn: () => container.barPhotoRepository.getSignedUrlsForBars(barIds),
     enabled: barIds.length > 0,
   });
-
-  const visibleBars = useMemo(() => (bars ?? []).slice(0, visibleCount), [bars, visibleCount]);
-  const hasMore = (bars?.length ?? 0) > visibleBars.length;
 
   // La propia base de datos decide si el bar se borra de verdad o solo se
   // oculta para ti (ver la función remove_bar_for_current_user, migración
@@ -201,7 +195,7 @@ export default function HomeScreen() {
           <ActivityIndicator style={styles.spinner} />
         ) : (
           <FlatList
-            data={visibleBars}
+            data={bars ?? []}
             keyExtractor={(bar) => bar.id}
             contentContainerStyle={styles.list}
             renderItem={({ item }) => (
@@ -219,11 +213,6 @@ export default function HomeScreen() {
             }
             ListFooterComponent={
               <View style={styles.footer}>
-                {hasMore ? (
-                  <AppButton mode="text" onPress={() => setVisibleCount((count) => count + PAGE_SIZE)}>
-                    Buscar más bares
-                  </AppButton>
-                ) : null}
                 <AppButton mode="contained" onPress={() => router.push('/bars/new')} style={styles.newBarButton}>
                   + Crear nuevo bar
                 </AppButton>

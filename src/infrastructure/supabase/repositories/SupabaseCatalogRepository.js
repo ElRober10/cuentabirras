@@ -60,6 +60,22 @@ export const supabaseCatalogRepository = {
       .select()
       .single();
     if (error) throw error;
+
+    // Ponerle precio a una bebida que no lo tenía no debe dejar "colgadas"
+    // las cuentas abiertas donde ya se añadió sin precio (price_cents_at_add
+    // null) — si no, se quedan sin sumar hasta quitarla y volver a meterla.
+    // La política "tab_items_update_participant" (migración 0031) ya limita
+    // esto solo a tus propias cuentas abiertas, así que no hace falta
+    // filtrar aquí por tab ni por participante.
+    if (priceCents != null) {
+      const { error: backfillError } = await supabase
+        .from('tab_items')
+        .update({ price_cents_at_add: priceCents })
+        .eq('catalog_item_id', catalogItemId)
+        .is('price_cents_at_add', null);
+      if (backfillError) throw backfillError;
+    }
+
     return mapCatalogItem(data);
   },
 

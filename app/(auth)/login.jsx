@@ -72,16 +72,17 @@ export default function LoginScreen() {
     }
   };
 
-  // Google nunca da teléfono, y nunca pasa por la casilla de términos del
-  // registro normal — si a la vuelta el perfil todavía no tiene términos
-  // aceptados (recién creado, o de una vez anterior que se saltó ese paso),
-  // mandamos a completarlo en vez de entrar directo a la app.
+  // Google nunca pasa por la casilla de términos del registro normal — si a
+  // la vuelta el perfil todavía no los tiene aceptados (recién creado, o de
+  // una vez anterior que se saltó ese paso), mandamos a aceptarlos en vez de
+  // entrar directo a la app. Ojo: a "accept-terms", NO a "edit-profile" —
+  // esa pantalla no pide de nuevo nombre/email (Google ya nos los dio).
   const handleGoogleLogin = async () => {
     setServerError(null);
     setIsGoogleLoading(true);
     try {
       const user = await loginWithGoogle();
-      router.replace(user.termsAcceptedAt ? '/(app)' : '/settings/edit-profile');
+      router.replace(user.termsAcceptedAt ? '/(app)' : '/settings/accept-terms');
     } catch (error) {
       setServerError(error.message);
     } finally {
@@ -89,15 +90,16 @@ export default function LoginScreen() {
     }
   };
 
-  // Mismo criterio que Google: Apple tampoco da teléfono ni pasa por la
-  // casilla de términos, así que si a la vuelta el perfil no los tiene, se
-  // manda a completarlo en vez de entrar directo.
+  // Mismo criterio que Google: Apple tampoco pasa por la casilla de
+  // términos, así que si a la vuelta el perfil no la tiene, se manda a
+  // aceptarla — sin volver a pedir nombre/email, que es justo lo que Apple
+  // prohíbe (guideline 4: no repetir datos que Sign in with Apple ya dio).
   const handleAppleLogin = async () => {
     setServerError(null);
     setIsAppleLoading(true);
     try {
       const user = await loginWithApple();
-      router.replace(user.termsAcceptedAt ? '/(app)' : '/settings/edit-profile');
+      router.replace(user.termsAcceptedAt ? '/(app)' : '/settings/accept-terms');
     } catch (error) {
       setServerError(error.message);
     } finally {

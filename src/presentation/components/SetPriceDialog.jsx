@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native';
 import { Dialog, HelperText, Portal, Text, TextInput } from 'react-native-paper';
 
 import { centsToEuros, eurosToCents } from '../../shared/utils/money';
@@ -43,36 +43,41 @@ export function SetPriceDialog({ visible, drinkName, initialPriceCents, onDismis
 
   return (
     <Portal>
-      <Dialog visible={visible} onDismiss={onDismiss}>
-        <Dialog.Title>{initialPriceCents != null ? 'Corregir precio' : '¿Sabes el precio?'}</Dialog.Title>
-        <Dialog.Content>
-          <Text style={styles.intro}>
-            {initialPriceCents != null
-              ? `Nuevo precio de "${drinkName}":`
-              : `"${drinkName}" todavía no tiene precio guardado. Si lo sabes, ponlo aquí — se guardará para la próxima vez.`}
-          </Text>
-          <TextInput label="Precio (€)" value={priceEuros} onChangeText={setPriceEuros} keyboardType="decimal-pad" error={!!error} autoFocus />
-          <HelperText type="error" visible={!!error}>
-            {error}
-          </HelperText>
-        </Dialog.Content>
-        {/* Fila propia (no Dialog.Actions, que solo alinea a la derecha):
-            Cancelar a la izquierda, Guardar a la derecha, y "No sé el
-            precio" en medio, todos juntos en la misma fila. */}
-        <View style={styles.actions}>
-          <AppButton mode="text" onPress={onDismiss}>
-            Cancelar
-          </AppButton>
-          {onSkip ? (
-            <AppButton mode="text" onPress={onSkip}>
-              No sé el precio
+      {/* KeyboardAvoidingView: sin esto, el teclado (que se abre solo, por el
+          autoFocus de arriba) tapaba el propio campo de precio en móviles
+          pequeños — el Dialog de Paper no evita el teclado por su cuenta. */}
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <Dialog visible={visible} onDismiss={onDismiss}>
+          <Dialog.Title>{initialPriceCents != null ? 'Corregir precio' : '¿Sabes el precio?'}</Dialog.Title>
+          <Dialog.Content>
+            <Text style={styles.intro}>
+              {initialPriceCents != null
+                ? `Nuevo precio de "${drinkName}":`
+                : `"${drinkName}" todavía no tiene precio guardado. Si lo sabes, ponlo aquí — se guardará para la próxima vez.`}
+            </Text>
+            <TextInput label="Precio (€)" value={priceEuros} onChangeText={setPriceEuros} keyboardType="decimal-pad" error={!!error} autoFocus />
+            <HelperText type="error" visible={!!error}>
+              {error}
+            </HelperText>
+          </Dialog.Content>
+          {/* Fila propia (no Dialog.Actions, que solo alinea a la derecha):
+              Cancelar a la izquierda, Guardar a la derecha, y "No sé el
+              precio" en medio, todos juntos en la misma fila. */}
+          <View style={styles.actions}>
+            <AppButton mode="text" onPress={onDismiss}>
+              Cancelar
             </AppButton>
-          ) : null}
-          <AppButton mode="contained" onPress={handleSubmit}>
-            Guardar
-          </AppButton>
-        </View>
-      </Dialog>
+            {onSkip ? (
+              <AppButton mode="text" onPress={onSkip}>
+                No sé el precio
+              </AppButton>
+            ) : null}
+            <AppButton mode="contained" onPress={handleSubmit}>
+              Guardar
+            </AppButton>
+          </View>
+        </Dialog>
+      </KeyboardAvoidingView>
     </Portal>
   );
 }
