@@ -53,4 +53,10 @@ export const supabaseAdminRepository = {
     if (error) throw error;
     return data.map((row) => ({ name: row.name, totalCount: Number(row.total_count) }));
   },
+
+  async getAuthEmailFailures() {
+    const { data, error } = await supabase.rpc('get_admin_auth_email_failures');
+    if (error) throw error;
+    return data.map((row) => ({ flow: row.flow, email: row.email, createdAt: row.created_at }));
+  },
 };

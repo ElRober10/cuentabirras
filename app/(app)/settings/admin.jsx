@@ -121,6 +121,20 @@ export default function AdminDashboardScreen() {
         </View>
         <MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.onSurfaceVariant} />
       </Pressable>
+
+      <Pressable
+        onPress={() => router.push('/settings/admin-auth-email-failures')}
+        style={[styles.card, { backgroundColor: theme.colors.surface, borderColor: theme.colors.outlineVariant }]}
+      >
+        <View style={[styles.iconBadge, { backgroundColor: theme.colors.primaryContainer }]}>
+          <MaterialCommunityIcons name="email-alert-outline" size={26} color={theme.colors.onPrimaryContainer} />
+        </View>
+        <View style={styles.cardText}>
+          <Text variant="titleMedium">Fallos de envío de email</Text>
+          <Text style={{ color: theme.colors.onSurfaceVariant }}>Registros que no pudieron confirmar por email (cuota SMTP)</Text>
+        </View>
+        <MaterialCommunityIcons name="chevron-right" size={22} color={theme.colors.onSurfaceVariant} />
+      </Pressable>
     </ScrollView>
   );
 }

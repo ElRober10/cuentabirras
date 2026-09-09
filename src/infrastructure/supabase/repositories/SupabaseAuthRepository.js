@@ -44,6 +44,36 @@ async function fetchProfile(userId) {
   };
 }
 
+// Los emails de auth (confirmar registro, recuperar contraseña, cambiar
+// email) los manda el SMTP configurado en Supabase (Brevo, plan gratis
+// 300/día). Cuando ese envío falla —cuota diaria agotada, SMTP mal, Brevo
+// caído— GoTrue devuelve un 500 y, en registro, deshace la creación del
+// usuario entera (el trigger handle_new_user ni se dispara), así que no hay
+// forma de enterarse desde el servidor. Lo detectamos aquí por la pinta del
+// error, avisamos al admin (RPC report_auth_email_failure, migración 0040 —
+// "best effort", si falla no pasa nada) y le damos al usuario un mensaje
+// entendible en vez del volcado crudo del 500.
+const EMAIL_DELIVERY_ERROR_MESSAGE =
+  'No hemos podido enviarte el email ahora mismo. Vuelve a intentarlo en unas horas.';
+
+function isEmailDeliveryError(error) {
+  if (!error) return false;
+  if (error.status === 500) return true;
+  if (error.code === 'over_email_send_rate_limit' || error.code === 'unexpected_failure') return true;
+  return /sending .*email|email .*rate limit/i.test(error.message ?? '');
+}
+
+async function reportAndRethrowEmailDeliveryError(error, flow, email) {
+  if (!isEmailDeliveryError(error)) throw error;
+  try {
+    await supabase.rpc('report_auth_email_failure', { p_flow: flow, p_email: email ?? null });
+  } catch {
+    // El aviso al admin es secundario — nunca debe tapar el error real
+    // que le mostramos al usuario.
+  }
+  throw new Error(EMAIL_DELIVERY_ERROR_MESSAGE);
+}
+
 // Esta es la implementación REAL del contrato IAuthRepository (domain/repositories/IAuthRepository.js).
 // El comentario de arriba (@type) le dice al editor "este objeto debe tener
 // exactamente estas funciones", para que avise si nos falta alguna.
@@ -71,7 +101,7 @@ export const supabaseAuthRepository = {
         emailRedirectTo: LEGAL_LINKS.emailConfirmed,
       },
     });
-    if (error) throw error;
+    if (error) await reportAndRethrowEmailDeliveryError(error, 'signup', email);
 
     // Si el proyecto tiene "Confirm email" activado (por defecto en Supabase),
     // no hay sesión hasta que el usuario confirme el enlace que le llega por email.
@@ -233,7 +263,7 @@ export const supabaseAuthRepository = {
   async requestPasswordReset(email) {
     const redirectTo = Linking.createURL('reset-password');
     const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-    if (error) throw error;
+    if (error) await reportAndRethrowEmailDeliveryError(error, 'password_reset', email);
   },
 
   // Se llama desde app/reset-password.jsx nada más abrirse desde el enlace
@@ -315,7 +345,7 @@ export const supabaseAuthRepository = {
   async updateEmail(newEmail) {
     const redirectTo = Linking.createURL('/');
     const { error } = await supabase.auth.updateUser({ email: newEmail }, { emailRedirectTo: redirectTo });
-    if (error) throw error;
+    if (error) await reportAndRethrowEmailDeliveryError(error, 'email_change', newEmail);
   },
 
   // Se llama desde app/(app)/settings/delete-account.jsx. El RPC

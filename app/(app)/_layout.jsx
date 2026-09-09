@@ -214,6 +214,7 @@ export default function AppLayout() {
         <Stack.Screen name="settings/admin-icon-requests" options={{ headerShown: true, title: 'Solicitudes de icono' }} />
         <Stack.Screen name="settings/admin-bars-location" options={{ headerShown: true, title: 'Bares por ubicación' }} />
         <Stack.Screen name="settings/admin-drink-ranking" options={{ headerShown: true, title: 'Ranking de bebidas' }} />
+        <Stack.Screen name="settings/admin-auth-email-failures" options={{ headerShown: true, title: 'Fallos de envío de email' }} />
       </Stack>
 
       <PendingLinkInvitationDialog

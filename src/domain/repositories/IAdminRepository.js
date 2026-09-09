@@ -28,12 +28,18 @@
  * @property {string} name - Nombre de la bebida (agrupado por nombre en TODA la app, no por bar).
  * @property {number} totalCount - Unidades pedidas en total. Nunca 0 (las bebidas sin ningún pedido no aparecen).
  *
+ * @typedef {Object} AuthEmailFailure
+ * @property {'signup'|'password_reset'|'email_change'} flow - Flujo desde el que se detectó que no se pudo enviar el email de auth.
+ * @property {string|null} email - Email al que se intentaba enviar (puede ser null en recuperar contraseña).
+ * @property {string} createdAt - ISO timestamp de cuándo se registró la incidencia.
+ *
  * @typedef {Object} IAdminRepository
  * @property {() => Promise<AdminDashboardStats>} getDashboardStats - Cifras generales de toda la app. Lanza si quien llama no es admin (lo comprueba el propio RPC, no confíes solo en que la pantalla no se enseñe).
  * @property {() => Promise<PendingIconRequest[]>} getPendingIconRequests - Bebidas "Otro" sin icono, agrupadas por nombre y ordenadas por cuántas hay pendientes (la más pedida primero).
  * @property {(params: {name: string, icon: string}) => Promise<number>} applyIconToPendingDrinks - Asigna `icon` a todas las catalog_items pendientes con ese `name` exacto (en todos los bares). Devuelve cuántas filas se actualizaron.
  * @property {() => Promise<BarLocationCount[]>} getBarsByLocation - Desglose de bares por ubicación, ya agregado en el RPC (una fila por cada combinación distinta de país/región/provincia/ciudad, con su recuento) — la pantalla decide qué nivel enseñar y va sumando barCount según haga falta.
  * @property {() => Promise<DrinkRankingEntry[]>} getDrinkRanking - Ranking completo de bebidas más pedidas de toda la app, ya ordenado de más a menos pedida.
+ * @property {() => Promise<AuthEmailFailure[]>} getAuthEmailFailures - Incidencias de "no se pudo enviar el email de auth" de los últimos 30 días, la más reciente primero (ver migración 0040). Lanza si quien llama no es admin.
  */
 
 export {};
