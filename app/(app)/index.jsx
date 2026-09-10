@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { FlatList, Image, StyleSheet, View } from 'react-native';
+import { FlatList, Image, Pressable, StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   interpolate,
@@ -11,10 +11,11 @@ import Animated, {
   withSequence,
   withTiming,
 } from 'react-native-reanimated';
-import { ActivityIndicator, Dialog, HelperText, IconButton, Portal, Text, useTheme } from 'react-native-paper';
+import { ActivityIndicator, Checkbox, Dialog, HelperText, IconButton, Portal, Text, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { listBarsSortedByDistance } from '../../src/application/bars/listBarsSortedByDistance';
+import { hiddenBarsNoticeSetting } from '../../src/infrastructure/settings/hiddenBarsNoticeSetting';
 import { container } from '../../src/di/container';
 import { AppButton } from '../../src/presentation/components/AppButton';
 import { BarListItem } from '../../src/presentation/components/BarListItem';
@@ -71,13 +72,37 @@ export default function HomeScreen() {
   // diálogo abierto ahora mismo).
   const [barPendingRemoval, setBarPendingRemoval] = useState(null);
   const [logoutConfirmVisible, setLogoutConfirmVisible] = useState(false);
+  // Aviso "tus bares no han desaparecido, solo se enseñan los del radio".
+  const [hiddenNoticeVisible, setHiddenNoticeVisible] = useState(false);
+  const [hiddenNoticeDontShowAgain, setHiddenNoticeDontShowAgain] = useState(false);
 
   const queryClient = useQueryClient();
 
-  const { data: bars, isLoading } = useQuery({
+  const { data: barsResult, isLoading } = useQuery({
     queryKey: ['bars'],
     queryFn: listBarsSortedByDistance,
   });
+  const bars = barsResult?.bars;
+  const hiddenCount = barsResult?.hiddenCount ?? 0;
+  const radiusKm = barsResult?.radiusKm;
+
+  // Cuando hay bares ocultos por el radio, enseñar el aviso una vez —
+  // salvo que el usuario ya marcara "no volver a mostrar" en este móvil.
+  useEffect(() => {
+    if (hiddenCount <= 0) return;
+    let cancelled = false;
+    hiddenBarsNoticeSetting.isDismissed().then((dismissed) => {
+      if (!cancelled && !dismissed) setHiddenNoticeVisible(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [hiddenCount]);
+
+  const closeHiddenNotice = async () => {
+    if (hiddenNoticeDontShowAgain) await hiddenBarsNoticeSetting.dismiss();
+    setHiddenNoticeVisible(false);
+  };
 
   // Las fotos de TODOS los bares (no solo los visibles ahora mismo) se
   // piden de golpe en cuanto llega la lista — dos peticiones en total en
@@ -266,6 +291,38 @@ export default function HomeScreen() {
             </AppButton>
           </Dialog.Actions>
         </Dialog>
+
+        <Dialog visible={hiddenNoticeVisible} onDismiss={closeHiddenNotice}>
+          <Dialog.Title>Tus bares no han desaparecido</Dialog.Title>
+          <Dialog.Content>
+            <Text>
+              Solo se muestran los bares que están a menos de {radiusKm} km de donde estás
+              ahora. Para cambiarlo, ve a Ajustes → «Radio de bares cercanos» y pon la
+              distancia que quieras.
+            </Text>
+            <Pressable
+              style={styles.hiddenNoticeCheckRow}
+              onPress={() => setHiddenNoticeDontShowAgain((value) => !value)}
+            >
+              <Checkbox status={hiddenNoticeDontShowAgain ? 'checked' : 'unchecked'} />
+              <Text style={styles.hiddenNoticeCheckLabel}>No volver a mostrar este mensaje</Text>
+            </Pressable>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <AppButton
+              mode="text"
+              onPress={async () => {
+                await closeHiddenNotice();
+                router.push('/settings');
+              }}
+            >
+              Ir a ajustes
+            </AppButton>
+            <AppButton mode="contained" onPress={closeHiddenNotice}>
+              Aceptar
+            </AppButton>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
     </View>
   );
@@ -342,5 +399,14 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
     marginRight: 8,
     marginBottom: -14,
+  },
+  hiddenNoticeCheckRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    marginLeft: -8,
+  },
+  hiddenNoticeCheckLabel: {
+    flex: 1,
   },
 });

@@ -2,8 +2,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import { Text, TextInput, useTheme } from 'react-native-paper';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { Text, useTheme } from 'react-native-paper';
 
 import { nearbyRadiusSetting } from '../../../src/infrastructure/settings/nearbyRadiusSetting';
 import { useAuth } from '../../../src/presentation/hooks/useAuth';
@@ -23,15 +23,23 @@ export default function SettingsScreen() {
     nearbyRadiusSetting.get().then((km) => setRadiusInput(String(km)));
   }, []);
 
+  // Tope máximo del radio. Más que de sobra (media España) y evita que el
+  // número se salga del campo o que se guarden barbaridades por un cero de más.
+  const MAX_RADIUS_KM = 9999;
+
   const handleRadiusChange = (text) => {
     // Solo dígitos y un punto decimal — evita guardar cualquier otra cosa
     // por error (el teclado numérico ya ayuda, pero por si acaso).
-    setRadiusInput(text.replace(',', '.').replace(/[^0-9.]/g, ''));
+    const cleaned = text.replace(',', '.').replace(/[^0-9.]/g, '');
+    const parsed = Number(cleaned);
+    // Si ya se pasa del tope mientras escribe, recortar en el acto.
+    setRadiusInput(Number.isFinite(parsed) && parsed > MAX_RADIUS_KM ? String(MAX_RADIUS_KM) : cleaned);
   };
 
   const handleRadiusBlur = () => {
-    const parsed = Number(radiusInput);
+    const parsed = Math.min(Number(radiusInput), MAX_RADIUS_KM);
     if (Number.isFinite(parsed) && parsed > 0) {
+      setRadiusInput(String(parsed));
       nearbyRadiusSetting.set(parsed);
       // Sin esto, la lista de bares (pantalla de inicio) no reflejaría el
       // radio nuevo hasta su próximo refresco automático (staleTime de 30s).
@@ -51,16 +59,23 @@ export default function SettingsScreen() {
           <Text variant="titleMedium">Radio de bares cercanos</Text>
           <Text style={{ color: theme.colors.onSurfaceVariant }}>Solo se enseñan los bares dentro de esta distancia</Text>
         </View>
-        <TextInput
-          value={radiusInput}
-          onChangeText={handleRadiusChange}
-          onBlur={handleRadiusBlur}
-          keyboardType="decimal-pad"
-          mode="outlined"
-          dense
-          right={<TextInput.Affix text="km" />}
-          style={styles.radiusInput}
-        />
+        {/* TextInput plano de React Native (no el de Paper): el de Paper, en
+            modo "outlined", fuerza una altura mínima grande pensada para
+            albergar su etiqueta flotante — aquí no hay etiqueta y quedaba un
+            recuadro desproporcionado. Con uno plano controlamos el alto y el
+            "km" va en la misma línea que el número. */}
+        <View style={[styles.radiusField, { borderColor: theme.colors.outline }]}>
+          <TextInput
+            value={radiusInput}
+            onChangeText={handleRadiusChange}
+            onBlur={handleRadiusBlur}
+            keyboardType="decimal-pad"
+            maxLength={6}
+            selectionColor={theme.colors.primary}
+            style={[styles.radiusFieldInput, { color: theme.colors.onSurface }]}
+          />
+          <Text style={{ color: theme.colors.onSurfaceVariant }}>km</Text>
+        </View>
       </View>
 
       <Pressable
@@ -152,8 +167,20 @@ const styles = StyleSheet.create({
   optionText: {
     flex: 1,
   },
-  radiusInput: {
-    width: 90,
-    height: 44,
+  radiusField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    width: 120,
+    height: 40,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+  },
+  radiusFieldInput: {
+    flex: 1,
+    textAlign: 'right',
+    fontSize: 16,
+    paddingVertical: 0,
   },
 });

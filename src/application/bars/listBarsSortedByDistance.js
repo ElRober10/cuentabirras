@@ -9,6 +9,10 @@ import { distanceInMeters } from '../../shared/utils/geo';
 // Ajustes) y aplica dos reglas de negocio: qué bares se enseñan (filtro) y
 // en qué orden (distancia primero si hay ubicación, número de veces que
 // has ido a ese bar como segundo criterio, y alfabético como desempate).
+//
+// Devuelve un objeto (no solo el array) porque la pantalla de inicio
+// necesita también saber CUÁNTOS bares se han ocultado por el radio y con
+// qué radio, para avisar al usuario de que sus bares no han desaparecido.
 export async function listBarsSortedByDistance() {
   const [bars, position, myTabs, radiusKm] = await Promise.all([
     container.barRepository.listVisibleBars(),
@@ -26,13 +30,18 @@ export async function listBarsSortedByDistance() {
     ? bars.filter((bar) => bar.latitude == null || distanceInMeters(position, bar) <= radiusMeters)
     : bars;
 
+  // Cuántos bares quedan escondidos por el filtro del radio. Solo cuenta si
+  // tenemos posición (sin ella no se filtra nada). Los privados nunca se
+  // ocultan, así que tampoco entran aquí.
+  const hiddenCount = position ? bars.length - visibleBars.length : 0;
+
   // Cuántas cuentas (tabs) has tenido en cada bar, sea cual sea su estado.
   const visitsByBar = {};
   for (const tab of myTabs) {
     visitsByBar[tab.barId] = (visitsByBar[tab.barId] ?? 0) + 1;
   }
 
-  return [...visibleBars].sort((a, b) => {
+  const sortedBars = [...visibleBars].sort((a, b) => {
     // 1) Distancia, solo si tenemos tu posición actual. Los bares privados
     // (sin coordenadas) reciben Infinity, así que nunca "ganan" por distancia.
     if (position) {
@@ -49,4 +58,6 @@ export async function listBarsSortedByDistance() {
     // 3) Alfabético, como último desempate.
     return a.name.localeCompare(b.name);
   });
+
+  return { bars: sortedBars, hiddenCount, radiusKm };
 }

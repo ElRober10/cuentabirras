@@ -43,7 +43,7 @@ describe('listBarsSortedByDistance', () => {
 
     const result = await listBarsSortedByDistance();
 
-    expect(result.map((b) => b.id)).toEqual(['cerca', 'lejos']);
+    expect(result.bars.map((b) => b.id)).toEqual(['cerca', 'lejos']);
   });
 
   it('filtra bares fuera del radio configurado', async () => {
@@ -56,7 +56,7 @@ describe('listBarsSortedByDistance', () => {
 
     const result = await listBarsSortedByDistance();
 
-    expect(result.map((b) => b.id)).toEqual(['cerca']);
+    expect(result.bars.map((b) => b.id)).toEqual(['cerca']);
   });
 
   it('nunca filtra los bares privados (sin coordenadas), aunque haya radio', async () => {
@@ -67,7 +67,7 @@ describe('listBarsSortedByDistance', () => {
 
     const result = await listBarsSortedByDistance();
 
-    expect(result.map((b) => b.id)).toEqual(['privado']);
+    expect(result.bars.map((b) => b.id)).toEqual(['privado']);
   });
 
   it('no filtra nada si no hay posición (permiso denegado)', async () => {
@@ -76,7 +76,7 @@ describe('listBarsSortedByDistance', () => {
 
     const result = await listBarsSortedByDistance();
 
-    expect(result.map((b) => b.id)).toEqual(['lejos']);
+    expect(result.bars.map((b) => b.id)).toEqual(['lejos']);
   });
 
   it('a igualdad de distancia, ordena por número de visitas (más primero)', async () => {
@@ -93,7 +93,7 @@ describe('listBarsSortedByDistance', () => {
 
     const result = await listBarsSortedByDistance();
 
-    expect(result.map((b) => b.id)).toEqual(['muy-visitado', 'poco-visitado']);
+    expect(result.bars.map((b) => b.id)).toEqual(['muy-visitado', 'poco-visitado']);
   });
 
   it('a igualdad de distancia y visitas, ordena alfabéticamente', async () => {
@@ -105,6 +105,33 @@ describe('listBarsSortedByDistance', () => {
 
     const result = await listBarsSortedByDistance();
 
-    expect(result.map((b) => b.name)).toEqual(['Alfa', 'Zeta']);
+    expect(result.bars.map((b) => b.name)).toEqual(['Alfa', 'Zeta']);
+  });
+
+  it('informa de cuántos bares se han ocultado por el radio y con qué radio', async () => {
+    deviceLocation.getCurrentPosition.mockResolvedValue(HERE);
+    nearbyRadiusSetting.get.mockResolvedValue(2);
+    container.barRepository.listVisibleBars.mockResolvedValue([
+      bar({ id: 'cerca', name: 'Cerca', ...NEAR }),
+      bar({ id: 'lejos1', name: 'Lejos 1', ...FAR }),
+      bar({ id: 'lejos2', name: 'Lejos 2', ...FAR }),
+    ]);
+
+    const result = await listBarsSortedByDistance();
+
+    expect(result.hiddenCount).toBe(2);
+    expect(result.radiusKm).toBe(2);
+  });
+
+  it('no cuenta ocultos si no hay posición', async () => {
+    deviceLocation.getCurrentPosition.mockResolvedValue(null);
+    container.barRepository.listVisibleBars.mockResolvedValue([
+      bar({ id: 'lejos', ...FAR }),
+      bar({ id: 'privado', latitude: null }),
+    ]);
+
+    const result = await listBarsSortedByDistance();
+
+    expect(result.hiddenCount).toBe(0);
   });
 });
