@@ -33,6 +33,22 @@ beforeEach(() => {
 });
 
 describe('listBarsSortedByDistance', () => {
+  // Contrato de la forma del resultado: es un OBJETO { bars, hiddenCount,
+  // radiusKm }, no un array. Varias pantallas escriben en la caché de
+  // react-query asumiendo esta forma (ver barsCache.js) — si alguien lo
+  // cambia a devolver el array pelado otra vez, esto salta.
+  it('devuelve un objeto { bars: [...], hiddenCount, radiusKm }', async () => {
+    deviceLocation.getCurrentPosition.mockResolvedValue(null);
+    container.barRepository.listVisibleBars.mockResolvedValue([bar({ id: 'x' })]);
+
+    const result = await listBarsSortedByDistance();
+
+    expect(Array.isArray(result)).toBe(false);
+    expect(Array.isArray(result.bars)).toBe(true);
+    expect(typeof result.hiddenCount).toBe('number');
+    expect(result).toHaveProperty('radiusKm');
+  });
+
   it('ordena por cercanía cuando hay posición', async () => {
     deviceLocation.getCurrentPosition.mockResolvedValue(HERE);
     nearbyRadiusSetting.get.mockResolvedValue(20); // radio amplio: que no filtre a "Lejos", solo queremos probar el orden
