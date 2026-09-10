@@ -45,8 +45,17 @@ export function SetPriceDialog({ visible, drinkName, initialPriceCents, onDismis
     <Portal>
       {/* KeyboardAvoidingView: sin esto, el teclado (que se abre solo, por el
           autoFocus de arriba) tapaba el propio campo de precio en móviles
-          pequeños — el Dialog de Paper no evita el teclado por su cuenta. */}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          pequeños — el Dialog de Paper no evita el teclado por su cuenta.
+          `style={absoluteFill}` + `pointerEvents="box-none"`: dentro de un
+          Portal, sin ocupar toda la pantalla, la KAV se colapsa arriba (a
+          partir de RN 0.86) y el diálogo salía como una tira en la cabecera;
+          box-none deja que los toques fuera del diálogo lleguen al backdrop. */}
+      <KeyboardAvoidingView
+        testID="price-dialog-kav"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="box-none"
+      >
         <Dialog visible={visible} onDismiss={onDismiss}>
           <Dialog.Title>{initialPriceCents != null ? 'Corregir precio' : '¿Sabes el precio?'}</Dialog.Title>
           <Dialog.Content>

@@ -6,6 +6,7 @@ import { Controller, useForm } from 'react-hook-form';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Divider, HelperText, Text, TextInput, useTheme } from 'react-native-paper';
 
+import { prependBarToCache } from '../../../src/application/bars/barsCache';
 import { createBarSchema } from '../../../src/application/bars/createBarSchema';
 import { findNearbyPublicBars } from '../../../src/application/bars/findNearbyPublicBar';
 import { container } from '../../../src/di/container';
@@ -85,7 +86,9 @@ export default function NewBarScreen() {
       // Lo metemos el primero en la lista que ya tenemos en caché, para que
       // se vea al instante en la pantalla principal sin esperar a una nueva
       // consulta (que además volvería a pedir la ubicación GPS — lenta).
-      queryClient.setQueryData(['bars'], (previousBars) => [bar, ...(previousBars ?? [])]);
+      // La caché de ['bars'] guarda el objeto { bars, hiddenCount, radiusKm }
+      // que devuelve listBarsSortedByDistance, no un array pelado (ver barsCache.js).
+      queryClient.setQueryData(['bars'], (previous) => prependBarToCache(previous, bar));
       // Y de todas formas disparamos un refresco real en segundo plano, para
       // que la próxima vez ya salga ordenado por distancia/visitas de verdad.
       queryClient.invalidateQueries({ queryKey: ['bars'] });

@@ -14,6 +14,7 @@ import Animated, {
 import { ActivityIndicator, Checkbox, Dialog, HelperText, IconButton, Portal, Text, useTheme } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { removeBarFromCache } from '../../src/application/bars/barsCache';
 import { listBarsSortedByDistance } from '../../src/application/bars/listBarsSortedByDistance';
 import { hiddenBarsNoticeSetting } from '../../src/infrastructure/settings/hiddenBarsNoticeSetting';
 import { container } from '../../src/di/container';
@@ -142,9 +143,9 @@ export default function HomeScreen() {
       // tenemos en caché AL INSTANTE, sin esperar a volver a pedirla entera
       // (esa nueva consulta pide de nuevo la ubicación GPS, que puede
       // tardar varios segundos — por eso antes parecía que no pasaba nada).
-      queryClient.setQueryData(['bars'], (previousBars) =>
-        (previousBars ?? []).filter((bar) => bar.id !== barId),
-      );
+      // La caché de ['bars'] guarda el objeto { bars, hiddenCount, radiusKm }
+      // que devuelve listBarsSortedByDistance, no un array pelado (ver barsCache.js).
+      queryClient.setQueryData(['bars'], (previous) => removeBarFromCache(previous, barId));
       // Aun así, disparamos un refresco de verdad en segundo plano, por si
       // hubiera cambiado algo más mientras tanto.
       queryClient.invalidateQueries({ queryKey: ['bars'] });

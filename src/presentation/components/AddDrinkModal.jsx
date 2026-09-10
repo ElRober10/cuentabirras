@@ -247,8 +247,17 @@ export function AddDrinkModal({
     <Portal>
       {/* KeyboardAvoidingView: sin esto, al elegir "Otro" el teclado (por el
           autoFocus del campo "Nombre" de abajo) tapaba el propio campo —
-          este Modal de Paper no evita el teclado por su cuenta. */}
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          este Modal de Paper no evita el teclado por su cuenta.
+          `style={absoluteFill}` + `pointerEvents="box-none"`: dentro de un
+          Portal, si no ocupa toda la pantalla, la KAV se colapsa arriba (a
+          partir de RN 0.86) y el modal salía como una tira en la cabecera;
+          box-none deja que los toques fuera del modal lleguen al backdrop. */}
+      <KeyboardAvoidingView
+        testID="add-drink-kav"
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={StyleSheet.absoluteFill}
+        pointerEvents="box-none"
+      >
       <Modal
         visible={visible}
         onDismiss={onDismiss}
