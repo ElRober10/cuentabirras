@@ -2,11 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Dialog, Divider, Portal, Snackbar, Text, useTheme } from 'react-native-paper';
+import { ActivityIndicator, Divider, Snackbar, Text, useTheme } from 'react-native-paper';
 
 import { reopenClosedTab } from '../../../src/application/tabs/reopenClosedTab';
 import { container } from '../../../src/di/container';
-import { AppButton } from '../../../src/presentation/components/AppButton';
+import { ConfirmDialog } from '../../../src/presentation/components/ConfirmDialog';
 import { centsToEuros } from '../../../src/shared/utils/money';
 
 // Histórico de cuentas: todas las tuyas, de cualquier bar, más reciente
@@ -83,29 +83,19 @@ export default function TabHistoryScreen() {
         />
       )}
 
-      <Portal>
-        <Dialog visible={!!reopenCandidate} onDismiss={() => setReopenCandidate(null)}>
-          <Dialog.Title>¿Reabrir esta cuenta?</Dialog.Title>
-          <Dialog.Content>
-            <Text>
-              Se volverá a poder añadir bebidas en &quot;{reopenCandidate?.barName}&quot;, como si nunca se hubiera
-              cerrado.
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <AppButton mode="text" onPress={() => setReopenCandidate(null)}>
-              Cancelar
-            </AppButton>
-            <AppButton
-              mode="contained"
-              loading={reopenMutation.isPending}
-              onPress={() => reopenMutation.mutate({ tabId: reopenCandidate.tabId, barId: reopenCandidate.barId })}
-            >
-              Reabrir
-            </AppButton>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+      <ConfirmDialog
+        visible={!!reopenCandidate}
+        title="¿Reabrir esta cuenta?"
+        confirmLabel="Reabrir"
+        confirmLoading={reopenMutation.isPending}
+        onCancel={() => setReopenCandidate(null)}
+        onConfirm={() => reopenMutation.mutate({ tabId: reopenCandidate.tabId, barId: reopenCandidate.barId })}
+      >
+        <Text>
+          Se volverá a poder añadir bebidas en &quot;{reopenCandidate?.barName}&quot;, como si nunca se hubiera
+          cerrado.
+        </Text>
+      </ConfirmDialog>
 
       <Snackbar visible={!!errorMessage} onDismiss={() => setErrorMessage(null)} duration={4000}>
         {errorMessage}

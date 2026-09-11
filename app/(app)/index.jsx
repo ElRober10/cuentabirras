@@ -20,6 +20,7 @@ import { hiddenBarsNoticeSetting } from '../../src/infrastructure/settings/hidde
 import { container } from '../../src/di/container';
 import { AppButton } from '../../src/presentation/components/AppButton';
 import { BarListItem } from '../../src/presentation/components/BarListItem';
+import { ConfirmDialog } from '../../src/presentation/components/ConfirmDialog';
 import { useAuth } from '../../src/presentation/hooks/useAuth';
 
 // Arranca los 3 bucles de la animación del logo (ver HomeScreen más abajo).
@@ -253,46 +254,35 @@ export default function HomeScreen() {
         <IconButton icon="logout" size={26} onPress={() => setLogoutConfirmVisible(true)} />
       </View>
 
+      <ConfirmDialog
+        visible={logoutConfirmVisible}
+        title="¿Seguro que quieres cerrar sesión?"
+        cancelLabel="No"
+        confirmLabel="Sí"
+        onCancel={() => setLogoutConfirmVisible(false)}
+        onConfirm={handleLogout}
+      />
+
+      <ConfirmDialog
+        visible={!!barPendingRemoval}
+        title="¿Quitar este bar?"
+        confirmLabel="Quitar"
+        confirmLoading={removeBarMutation.isPending}
+        onCancel={() => setBarPendingRemoval(null)}
+        onConfirm={() => removeBarMutation.mutate(barPendingRemoval.id)}
+      >
+        <Text>
+          Vas a quitar &quot;{barPendingRemoval?.name}&quot; de tu lista. Si nadie más lo usa se
+          eliminará del todo; si lo usan más personas, solo se ocultará para ti.
+        </Text>
+        {removeBarMutation.isError ? (
+          <HelperText type="error" visible>
+            {removeBarMutation.error?.message ?? 'No se pudo quitar el bar.'}
+          </HelperText>
+        ) : null}
+      </ConfirmDialog>
+
       <Portal>
-        <Dialog visible={logoutConfirmVisible} onDismiss={() => setLogoutConfirmVisible(false)}>
-          <Dialog.Title>¿Seguro que quieres cerrar sesión?</Dialog.Title>
-          <Dialog.Actions>
-            <AppButton mode="text" onPress={() => setLogoutConfirmVisible(false)}>
-              No
-            </AppButton>
-            <AppButton mode="contained" onPress={handleLogout}>
-              Sí
-            </AppButton>
-          </Dialog.Actions>
-        </Dialog>
-
-        <Dialog visible={!!barPendingRemoval} onDismiss={() => setBarPendingRemoval(null)}>
-          <Dialog.Title>¿Quitar este bar?</Dialog.Title>
-          <Dialog.Content>
-            <Text>
-              Vas a quitar &quot;{barPendingRemoval?.name}&quot; de tu lista. Si nadie más lo usa se
-              eliminará del todo; si lo usan más personas, solo se ocultará para ti.
-            </Text>
-            {removeBarMutation.isError ? (
-              <HelperText type="error" visible>
-                {removeBarMutation.error?.message ?? 'No se pudo quitar el bar.'}
-              </HelperText>
-            ) : null}
-          </Dialog.Content>
-          <Dialog.Actions>
-            <AppButton mode="text" onPress={() => setBarPendingRemoval(null)}>
-              Cancelar
-            </AppButton>
-            <AppButton
-              mode="contained"
-              loading={removeBarMutation.isPending}
-              onPress={() => removeBarMutation.mutate(barPendingRemoval.id)}
-            >
-              Quitar
-            </AppButton>
-          </Dialog.Actions>
-        </Dialog>
-
         <Dialog visible={hiddenNoticeVisible} onDismiss={closeHiddenNotice}>
           <Dialog.Title>Tus bares no han desaparecido</Dialog.Title>
           <Dialog.Content>

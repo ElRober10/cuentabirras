@@ -4,22 +4,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Controller, useForm } from 'react-hook-form';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
-import {
-  ActivityIndicator,
-  Dialog,
-  HelperText,
-  Portal,
-  Snackbar,
-  Text,
-  TextInput,
-  useTheme,
-} from 'react-native-paper';
+import { ActivityIndicator, HelperText, Snackbar, Text, TextInput, useTheme } from 'react-native-paper';
 
 import { linkInvitationEmailSchema } from '../../../src/application/invitations/linkInvitationEmailSchema';
 import { sendLinkInvitationByEmail } from '../../../src/application/invitations/sendLinkInvitationByEmail';
 import { sendLinkInvitationByPhone } from '../../../src/application/invitations/sendLinkInvitationByPhone';
 import { container } from '../../../src/di/container';
 import { AppButton } from '../../../src/presentation/components/AppButton';
+import { ConfirmDialog } from '../../../src/presentation/components/ConfirmDialog';
 import { KeyboardAwareScreen } from '../../../src/presentation/components/KeyboardAwareScreen';
 import { LinkedAccountBanner } from '../../../src/presentation/components/LinkedAccountBanner';
 import { usePendingLinkInvitations } from '../../../src/presentation/hooks/usePendingLinkInvitations';
@@ -330,29 +322,16 @@ export default function LinkAccountScreen() {
           'No se pudo completar la acción.'}
       </Snackbar>
 
-      <Portal>
-        <Dialog visible={unlinkConfirmVisible} onDismiss={() => setUnlinkConfirmVisible(false)}>
-          <Dialog.Title>¿Desvincular cuenta?</Dialog.Title>
-          <Dialog.Content>
-            <Text>
-              Dejaréis de compartir el fondo común. Podréis volver a vincularos más adelante si
-              queréis.
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <AppButton mode="text" onPress={() => setUnlinkConfirmVisible(false)}>
-              Cancelar
-            </AppButton>
-            <AppButton
-              mode="contained"
-              loading={unlinkMutation.isPending}
-              onPress={() => unlinkMutation.mutate(linkQuery.data.linkId)}
-            >
-              Desvincular
-            </AppButton>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+      <ConfirmDialog
+        visible={unlinkConfirmVisible}
+        title="¿Desvincular cuenta?"
+        confirmLabel="Desvincular"
+        confirmLoading={unlinkMutation.isPending}
+        onCancel={() => setUnlinkConfirmVisible(false)}
+        onConfirm={() => unlinkMutation.mutate(linkQuery.data.linkId)}
+      >
+        <Text>Dejaréis de compartir el fondo común. Podréis volver a vincularos más adelante si queréis.</Text>
+      </ConfirmDialog>
     </KeyboardAwareScreen>
   );
 }

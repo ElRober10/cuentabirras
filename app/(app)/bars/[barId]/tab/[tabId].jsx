@@ -3,15 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMemo, useRef, useState } from 'react';
 import { FlatList, Pressable, StyleSheet, View } from 'react-native';
-import {
-  ActivityIndicator,
-  Dialog,
-  FAB,
-  Portal,
-  Snackbar,
-  Text,
-  useTheme,
-} from 'react-native-paper';
+import { ActivityIndicator, FAB, Snackbar, Text, useTheme } from 'react-native-paper';
 
 import { listCatalogSortedByPopularity } from '../../../../../src/application/catalog/listCatalogSortedByPopularity';
 import { addDrinkToTab } from '../../../../../src/application/tabs/addDrinkToTab';
@@ -22,6 +14,7 @@ import {
 import { container } from '../../../../../src/di/container';
 import { AddDrinkModal } from '../../../../../src/presentation/components/AddDrinkModal';
 import { AppButton } from '../../../../../src/presentation/components/AppButton';
+import { ConfirmDialog } from '../../../../../src/presentation/components/ConfirmDialog';
 import { SetPriceDialog } from '../../../../../src/presentation/components/SetPriceDialog';
 import { TabItemRow } from '../../../../../src/presentation/components/TabItemRow';
 import { centsToEuros } from '../../../../../src/shared/utils/money';
@@ -396,29 +389,16 @@ export default function TabScreen() {
         {errorMessage}
       </Snackbar>
 
-      <Portal>
-        <Dialog visible={unlinkConfirmVisible} onDismiss={() => setUnlinkConfirmVisible(false)}>
-          <Dialog.Title>¿Desvincular cuenta?</Dialog.Title>
-          <Dialog.Content>
-            <Text>
-              Dejaréis de compartir el fondo común. Podréis volver a vincularos más adelante si
-              queréis.
-            </Text>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <AppButton mode="text" onPress={() => setUnlinkConfirmVisible(false)}>
-              Cancelar
-            </AppButton>
-            <AppButton
-              mode="contained"
-              loading={unlinkMutation.isPending}
-              onPress={() => unlinkMutation.mutate(linkQuery.data.linkId)}
-            >
-              Desvincular
-            </AppButton>
-          </Dialog.Actions>
-        </Dialog>
-      </Portal>
+      <ConfirmDialog
+        visible={unlinkConfirmVisible}
+        title="¿Desvincular cuenta?"
+        confirmLabel="Desvincular"
+        confirmLoading={unlinkMutation.isPending}
+        onCancel={() => setUnlinkConfirmVisible(false)}
+        onConfirm={() => unlinkMutation.mutate(linkQuery.data.linkId)}
+      >
+        <Text>Dejaréis de compartir el fondo común. Podréis volver a vincularos más adelante si queréis.</Text>
+      </ConfirmDialog>
     </View>
   );
 }
