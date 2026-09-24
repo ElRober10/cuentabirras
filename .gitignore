@@ -32,7 +32,10 @@ yarn-error.*
 
 # local env files
 .env
-.env*.local
+.env.*
+!.env.example
+credentials.json
+*.keystore
 
 # typescript — el proyecto es JS a propósito (ver AGENTS.md); esto solo lo
 # regenera solo Expo al detectar los .ts de supabase/functions/ (Edge
